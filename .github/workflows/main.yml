@@ -1,0 +1,43 @@
+---
+
+name: CI
+
+# yamllint disable-line rule:truthy
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  main:
+    name: "X86: ${{ matrix.shell }} on ${{ matrix.image }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [bash, zsh]  # Currently no ash
+        image: [alpine, debian, archlinux]
+
+    container:
+      image: ${{ matrix.image }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install
+          case "${{ matrix.image }}" in
+            alpine)
+              apk update
+              apk add which bash ${{ matrix.shell }}
+              ;;
+            debian)
+              apt-get update
+              apt-get install -y ${{ matrix.shell }}
+              ;;
+            archlinux)
+              pacman -Sy --noconfirm which ${{ matrix.shell }}
+              ;;
+          esac
+
+      - name: Run
+        run: ${{ matrix.shell }} test/test_in_mem_bin.sh
+        shell: ${{ matrix.shell }}
