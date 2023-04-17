@@ -8,8 +8,8 @@ Supports: bash zsh ash ksh sh
 Ex:
 /proc/self/exe ./in_mem_bin.sh &
 ls -l /proc/$!/fd
-cp $(command which echo) /proc/$!/fd/3
-/proc/$!/fd/3 -e "\e[34mmy message\e[0m"
+cp $(command which echo) /proc/$!/fd/4
+/proc/$!/fd/4 -e "\e[34mmy message\e[0m"
 
 From: https://github.com/arget13/DDexec/blob/main/ddsc.sh
 '
@@ -34,6 +34,8 @@ create_memfd(){
   jumper_addr=$(hex2dec "$jumper_addr")
   
   # Overwrite vDSO with our shellcode
+  echo Tin1
+  ls -l /proc/$$/fd
   exec 3> /proc/self/mem
   seek "$shellcode_addr" <&3
   unhexify "$shellcode_hex" >&3
@@ -41,12 +43,14 @@ create_memfd(){
 
   # Write jump instruction where it will be found shortly
   exec 3> /proc/self/mem
+  echo Tin2
+  ls -l /proc/$$/fd
   seek "$jumper_addr" <&3
   unhexify "$jumper_hex" >&3
-  exec 3>&-
 
   # Trigger jumper (this does not return)
   read -r syscall_info < /proc/self/syscall
+  exec 3>&-
 }
 
 

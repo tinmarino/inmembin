@@ -11,7 +11,7 @@ jumper_addr=$(($(echo "$syscall_info" | cut -d' ' -f9)))
 
 # Global
 exit_status=0
-scriptdir=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+scriptdir=$(dirname "$(readlink -f "$0")")
 
 equal(){
     : 'Helper function
@@ -27,14 +27,26 @@ equal(){
     echo -e "$msg"
 }
 
-for test_shell in bash zsh ash ksh sh; do
-  "$test_shell" "$scriptdir"/../in_mem_bin.sh &
-  pid=$!
-  sleep 0.3
-  #ls -l /proc/$pid/fd/
-  cp "$(command which echo)" /proc/$pid/fd/3
-  out=$(/proc/$pid/fd/3 -e "arg1"  "arg2")
-  equal "arg1 arg2" "$out" "ddsc_min.sh should work with $test_shell"
-done
+#for test_shell in bash zsh ash ksh sh; do
+#for test_shell in /proc/self/exe; do
+echo Pre
+ls -l /proc/$$/fd/
+
+/proc/self/exe "$scriptdir"/../in_mem_bin.sh &
+pid=$!
+sleep 0.3
+
+echo Post 1
+ls -l /proc/$$/fd/
+
+echo Post 2
+ls -l /proc/$pid/fd/
+
+#exec 4<> /proc/"$pid"/fd/4
+cp -f "$(command which echo)" /proc/"$pid"/fd/4
+#cat "$(command which echo)" >&4 
+
+out=$(/proc/"$pid"/fd/4 -e "arg1"  "arg2")
+equal "arg1 arg2" "$out" "ddsc_min.sh should work with $(readlink -f /proc/$$/exe)"
 
 exit "$exit_status"
