@@ -1,0 +1,13 @@
+# Disable: In POSIX sh, 'local' is undefined.
+# -- I prefer a clean scope
+disable=SC3043  
+
+# Expressions don't expand in single quotes
+# -- my docstrings may have $. Besides, I know what I do here
+disable=SC2016
+
+# Declare and assign separately to avoid masking return values -> Prevent declare -a, local
+# -- I prefer in one line
+disable=SC2155
+
+# vim: ft=toml

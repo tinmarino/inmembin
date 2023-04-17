@@ -8,11 +8,12 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   main:
     name: "X86: ${{ matrix.shell }} on ${{ matrix.image }}"
+
     strategy:
       fail-fast: false
       matrix:
         shell: [bash, zsh, ash, ksh, sh]
-        image: [debian, archlinux]  # Alpine cannot copy
+        image: [debian, archlinux, alpine]  # Alpine cannot copy
 
     container:
       image: ${{ matrix.image }}
@@ -70,8 +71,31 @@ jobs:
               [ "$apt" = dash ] && ln -s /bin/dash /bin/ash
               ;;
           esac
+          # Prepare the error message in case script breaks
+          shell_aligned=$(printf "%-4s" "${{ matrix.shell }}")
+          echo "SHELL=$shell_aligned" >> $GITHUB_ENV
+          echo "MSG=failing" >> $GITHUB_ENV
+          echo "COLOR=#ea4a5a" >> $GITHUB_ENV
           exit 0
 
       - name: Run
-        run: ${{ matrix.shell }} test/test_in_mem_bin.sh
         shell: bash
+        # continue-on-error: true  # commented as wrong report
+        run: |
+          ${{ matrix.shell }} test/test_in_mem_bin.sh
+          ret=$?
+          if [ 0 = "$ret" ]; then
+            echo "MSG=passing" >> $GITHUB_ENV
+            echo "COLOR=#34d058" >> $GITHUB_ENV
+          fi
+
+      - name: Create Awesome Badge
+        if: always()
+        uses: schneegans/dynamic-badges-action@v1.6.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: 7b40042f91625feffeaa1941f7aba953
+          filename: in_mem_bin_CI_${{ matrix.shell }}_on_${{ matrix.image }}.json
+          label: "${{ env.SHELL }} on ${{ matrix.image }}"
+          message: ${{ env.MSG }}
+          color: ${{ env.COLOR }}

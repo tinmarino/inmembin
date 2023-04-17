@@ -1,6 +1,6 @@
 #!/bin/sh
 : 'Open next available FD with a memfd to execute elf in memory
-Must be executed in a async job becasue I will sleep
+Must be executed in a async job because I will sleep
 
 Requires: dd uname cut
 Supports: bash zsh ash ksh sh
@@ -95,7 +95,7 @@ unhexify(){
 
 
 hex2dec(){
-  : 'ksh do not support 64 bit arithmetic (as 2023 fo mksh)'
+  : 'ksh do not support 64 bit arithmetic (as 2023 for mksh)'
   #printf "$(( $1 ))"
   printf "%d" "$1"
 }
@@ -152,7 +152,7 @@ config_if_zsh(){
 }
 
 
-# Run if executed (not sourced), warning filename harcode
+# Run if executed (not sourced), warning filename hardcode
 case ${0##*/} in
   sh|bash|zsh|dash|ash|ksh) :;;
   *) create_memfd;;
