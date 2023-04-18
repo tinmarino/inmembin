@@ -83,18 +83,12 @@ get_read_syscall_ret_addr(){
 }
 
 
-seek(){
-  : 'Seek offset (arg1) on stdin => just to offset the FD'
-  dd bs=1 skip="$1" > /dev/null 2>&1
-}
-
-
 endian(){
   : 'Change endianness of hex string (arg1)'
-  i=${#1} out=''
-  while [ "$i" -ge 0 ]; do
-    out="$out$(printf "%s" "$1" | cut -c$(( i+1 ))-$(( i+2 )))"
-    i=$((i-2))
+  i=0 out=''
+  while [ "$i" -lt "${#1}" ]; do
+    out="$(printf "%s" "$1" | cut -c$(( i+1 ))-$(( i+2 )))$out"
+    i=$((i+2))
   done
   printf "%s" "$out"
 }
@@ -116,6 +110,12 @@ unhexify(){
 hex2dec(){
   : 'Convert hex number to decimal number'
   printf "%d" "$1"
+}
+
+
+seek(){
+  : 'Seek offset (arg1) on stdin => just to offset the FD'
+  dd bs=1 skip="$1" > /dev/null 2>&1
 }
 
 

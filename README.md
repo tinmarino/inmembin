@@ -31,7 +31,19 @@ Requires: dd uname cut
 
 Supports: bash zsh ash (dash) ksh (mksh) sh
 
-# Verbose coding patterns
+# Linux magic
+
+TODO
+/proc/self/mem and maps ans syscalls
+
+# Verbose code description
+
+### main
+
+The main routine is crafting and writing in memory
+
+1. shellcode
+2. jumper: small `jmp` instruction to jump to it.
 
 ### hex2dec
 
@@ -45,7 +57,7 @@ $(( 0x10 ))  # More readable
 
 Ksh (mksh) do not support 64 bit arithmetic and hardly support unsigned integer (I did not succeed). So the hex2dec: $((0x10)) used by @arget13 was replaced by printf "%d"
 
-### `seek`
+### seek
 
 Using the dd method
 
@@ -60,6 +72,29 @@ xxd -s "$1" > /dev/null 2>&1  # From vim
 Ksh is not supporting the `$(( $1 + 1 ))` arithmetic. This is unfortunate, I would have preferred to use tail like @arget13, just for personal affinity.
 
 Silence error to avoid: error reading standard input: Bad file descriptor, which I do not care
+
+
+### endian
+
+String indexing is not supported in sh and ash. As shellcode are supposed to be small, just invert pair of chars by preprending each next pair (like vim `:g/.*/m0`).
+
+Initially I was appending, but anyway the `+=` operator is not supported in ash.
+
+### unhexlify
+
+TODO Doc
+
+### get_read_syscall_ret_addr
+
+TODO Doc
+
+### get_section_start_addr
+
+TODO Doc
+
+### shellcode and jumper
+
+TODO Doc
 
 # Credit
 
