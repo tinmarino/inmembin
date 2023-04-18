@@ -1,6 +1,6 @@
 #!/bin/sh
 : 'Open next available FD with a memfd
-Used to execute binary in memory (wihout touching HD)
+-- Used to execute binary in memory (without touching HD)
 
 Ex: bash ./in_mem_bin.sh & sleep 0.3; cp $(command which echo) /proc/$!/fd/4; /proc/$!/fd/4 toto
 '
@@ -40,15 +40,13 @@ craft_shellcode(){
   case $ARCH in
     x86_64)
       out=4831c04889c6b0024889c7b0210f05  # dup
-      out="${out}68444541444889e74831f64889f0b401b03f0f054889c7b04d0f05b0220f05"  # memfd
-      ;;
+      out="${out}68444541444889e74831f64889f0b401b03f0f054889c7b04d0f05b0220f05";;  # memfd
     aarch64)
       out=080380d2400080d2010080d2010000d4
-      out="${out}802888d2a088a8f2e00f1ff8e0030091210001cae82280d2010000d4c80580d2010000d4881580d2010000d4610280d2281080d2010000d4"
-      ;;
+      out="${out}802888d2a088a8f2e00f1ff8e0030091210001cae82280d2010000d4c80580d2010000d4881580d2010000d4610280d2281080d2010000d4";;
     *)
       echo "DDexec: Error, this architecture is not supported." >&2
-      exit 1
+      exit 1;;
   esac
   printf "%s" "$out"
 }

@@ -43,7 +43,7 @@ $(( 0x10 ))  # More readable
 ```
 
 
-Ksh (mksh) do not support 64 bit arithmetic and hardly suport unsigned integer (I did not succeed). So the hex2dec: $((0x10)) used by @arget13 was replaced by printf "%d"
+Ksh (mksh) do not support 64 bit arithmetic and hardly support unsigned integer (I did not succeed). So the hex2dec: $((0x10)) used by @arget13 was replaced by printf "%d"
 
 ### `seek`
 
@@ -57,7 +57,7 @@ hexdump -s "$1" > /dev/null 2>&1  # From util-linux
 xxd -s "$1" > /dev/null 2>&1  # From vim
 ```
 
-Ksh is not supporting the `$(( $1 + 1 ))` arithmetic. This is unfortunate, I would have prefered to use tail like @arget13, just for personal afinity.
+Ksh is not supporting the `$(( $1 + 1 ))` arithmetic. This is unfortunate, I would have preferred to use tail like @arget13, just for personal affinity.
 
 Silence error to avoid: error reading standard input: Bad file descriptor, which I do not care
 
