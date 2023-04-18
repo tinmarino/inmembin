@@ -31,10 +31,33 @@ Requires: dd uname cut
 
 Supports: bash zsh ash (dash) ksh (mksh) sh
 
-# Verbose
+# Verbose coding patterns
 
-TODO
+### hex2dec
 
+Using the printf method
+
+```sh
+printf "%d" 0x10  # Posix compatible
+$(( 0x10 ))  # More readable
+```
+
+
+Ksh (mksh) do not support 64 bit arithmetic and hardly suport unsigned integer (I did not succeed). So the hex2dec: $((0x10)) used by @arget13 was replaced by printf "%d"
+
+### `seek`
+
+Using the dd method
+
+```sh
+dd bs=1 skip="$1" > /dev/null 2>&1  # From coreutils
+tail -c +$(($1 + 1)) >/dev/null 2>&1  # From coreutils + Bad for ksh
+cmp -i "$1" /dev/null > /dev/null 2>&1  # From diffutils
+hexdump -s "$1" > /dev/null 2>&1  # From util-linux
+xxd -s "$1" > /dev/null 2>&1  # From vim
+```
+
+Ksh is not supporting the `$(( $1 + 1 ))` arithmetic. This is unfortunate, I would have prefered to use tail like @arget13, just for personal afinity.
 
 # Credit
 
