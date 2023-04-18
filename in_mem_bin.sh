@@ -20,9 +20,6 @@ create_memfd(){
   : 'Main: no argument'
   local shellcode_hex shellcode_addr jumper_hex jumper_addr
 
-  # Init shell
-  config_if_zsh
-
   # Craft the shellcode and jumper hex
   shellcode_hex="$(craft_shellcode)"
   # -- The shellcode will be written into the vDSO
@@ -137,14 +134,6 @@ craft_jumper(){
     aarch64) out="4000005800001fd6$(endian "$out")";;
   esac
   printf "%s" "$out"
-}
-
-
-config_if_zsh(){
-  : 'Make zsh behave somewhat like bash'
-  [ -z "$ZSH_VERSION" ] && return
-  setopt SH_WORD_SPLIT
-  setopt KSH_ARRAYS
 }
 
 
