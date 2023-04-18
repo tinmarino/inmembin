@@ -1,34 +1,21 @@
 #!/bin/sh
-: 'Open next available FD with a memfd to execute elf in memory
-Must be executed in a async job because I will sleep
+: 'Open next available FD with a memfd
+Used to execute binary in memory (wihout touching HD)
 
-Requires: dd uname cut
-Supports: bash zsh ash ksh sh
-
-Ex:
-/proc/self/exe ./in_mem_bin.sh &
-ls -l /proc/$!/fd
-cp $(command which echo) /proc/$!/fd/4
-/proc/$!/fd/4 -e "\e[34mmy message\e[0m"
-
-From: https://github.com/arget13/DDexec/blob/main/ddsc.sh
+Ex: bash ./in_mem_bin.sh & sleep 0.3; cp $(command which echo) /proc/$!/fd/4; /proc/$!/fd/4 toto
 '
 
-arch=$(uname -m)  # x86_64 or aarch64
+ARCH=$(uname -m)  # x86_64 or aarch64
 
 create_memfd(){
   : 'Main: no argument'
-  local shellcode_hex shellcode_addr jumper_hex jumper_addr
+  # Craft the shellcode to be written into the vDSO
+  local shellcode_hex="$(craft_shellcode)"
+  local shellcode_addr="$(get_section_start_addr '[vdso]')"
 
-  # Craft the shellcode and jumper hex
-  shellcode_hex="$(craft_shellcode)"
-  # -- The shellcode will be written into the vDSO
-  shellcode_addr="0x$(get_section_map_start '[vdso]')"
-  shellcode_addr=$(hex2dec "$shellcode_addr")
-  jumper_hex="$(craft_jumper "$shellcode_addr")"
-  read -r syscall_info < /proc/self/syscall
-  jumper_addr=$(printf "%s" "$syscall_info" | cut -d' ' -f9)
-  jumper_addr=$(hex2dec "$jumper_addr")
+  # Craft the jumper to jump to shellcode and written to a syscall ret PC
+  local jumper_hex="$(craft_jumper "$shellcode_addr")"
+  local jumper_addr="$(get_read_syscall_ret_addr)"
   
   # Overwrite vDSO with our shellcode
   exec 3> /proc/self/mem
@@ -47,67 +34,10 @@ create_memfd(){
 }
 
 
-seek(){
-  : 'Seek offset (arg1) on stdin => just to offset the FD
-    -- silence error to avoid: error reading standard input: Bad file descriptor, which I do not care
-    dd bs=1 skip="$1" > /dev/null 2>&1  # From coreutils
-    tail -c +$(($1 + 1)) >/dev/null 2>&1  # From coreutils + Bad for ksh
-    cmp -i "$1" /dev/null > /dev/null 2>&1  # From diffutils
-    hexdump -s "$1" > /dev/null 2>&1  # From util-linux
-    xxd -s "$1" > /dev/null 2>&1  # From vim
-  '
-  dd bs=1 skip="$1" > /dev/null 2>&1  # From coreutils
-}
-
-
-endian(){
-  : 'Change endianness of hex string (arg1)'
-  local i=${#1} out=''
-  while [ "$i" -ge 0 ]; do
-    out="$out$(printf "%s" "$1" | cut -c$(( i+1 ))-$(( i+2 )))"
-    i=$((i-2))
-  done
-  printf "%s" "$out"
-}
-
-
-unhexify(){
-  : 'Convert hex string (arg1) to binary stream to stdout
-    Dev: in POSIX sh, no printf "\x41" is allowed, so go octal
-  '
-  local escaped='' i=0 num=0
-  while [ "$i" -lt "${#1}" ]; do
-    num=$(( 0x$(printf "%s" "$1" | cut -c$(( i+1 ))-$(( i+2 ))) ))
-    escaped="$escaped\\$(printf "%o" "$num")"
-    i=$(( i+2 ))
-  done
-    
-  # shellcheck disable=SC2059  # Don't use variables in the p...t string
-  printf "$escaped"
-}
-
-
-hex2dec(){
-  : 'ksh do not support 64 bit arithmetic (as 2023 for mksh)'
-  #printf "$(( $1 ))"
-  printf "%d" "$1"
-}
-
-
-get_section_map_start(){
-  : 'Print offset of start of section with string (arg1)'
-  while read -r line; do
-    case $line in *"$1"*)
-      printf "%s" "$line" | cut -d- -f1
-    esac
-  done < /proc/$$/maps
-}
-
-
 craft_shellcode(){
   : 'Craft hex shellcode with: dup2(2, 0); memfd_create;'
   local out=''
-  case $arch in
+  case $ARCH in
     x86_64)
       out=4831c04889c6b0024889c7b0210f05  # dup
       out="${out}68444541444889e74831f64889f0b401b03f0f054889c7b04d0f05b0220f05"  # memfd
@@ -129,7 +59,7 @@ craft_jumper(){
   -- Trampoline to jump to the shellcode
   '
   local out="$(printf %016x "$1")"
-  case $arch in
+  case $ARCH in
     x86_64) out="48b8$(endian "$out")ffe0";;
     aarch64) out="4000005800001fd6$(endian "$out")";;
   esac
@@ -137,8 +67,62 @@ craft_jumper(){
 }
 
 
+get_section_start_addr(){
+  : 'Print offset of start of section with string (arg1)'
+  local out=""
+  while read -r line; do case $line in *"$1"*)
+    out=$(printf "%s" "$line" | cut -d- -f1); break
+  esac; done < /proc/$$/maps
+  hex2dec "0x$out"
+}
+
+
+get_read_syscall_ret_addr(){
+  : 'Print decimal addr where a next syscall will return, to put jumper, as trigger'
+  read -r syscall_info < /proc/self/syscall
+  local out="$(printf "%s" "$syscall_info" | cut -d' ' -f9)"
+  hex2dec "$out"
+}
+
+
+seek(){
+  : 'Seek offset (arg1) on stdin => just to offset the FD'
+  dd bs=1 skip="$1" > /dev/null 2>&1
+}
+
+
+endian(){
+  : 'Change endianness of hex string (arg1)'
+  local i=${#1} out=''
+  while [ "$i" -ge 0 ]; do
+    out="$out$(printf "%s" "$1" | cut -c$(( i+1 ))-$(( i+2 )))"
+    i=$((i-2))
+  done
+  printf "%s" "$out"
+}
+
+
+unhexify(){
+  : 'Convert hex string (arg1) to binary stream (stdout)'
+  local escaped='' i=0 num=0
+  while [ "$i" -lt "${#1}" ]; do
+    num=$(( 0x$(printf "%s" "$1" | cut -c$(( i+1 ))-$(( i+2 ))) ))
+    escaped="$escaped\\$(printf "%o" "$num")"
+    i=$(( i+2 ))
+  done
+  # shellcheck disable=SC2059  # Don't use variables in the p...t string
+  printf "$escaped"
+}
+
+
+hex2dec(){
+  : 'Convert hex number to decimal number'
+  printf "%d" "$1"
+}
+
+
 # Run if executed (not sourced), warning filename hardcode
 case ${0##*/} in
-  sh|bash|zsh|dash|ash|ksh) :;;
+  bash|zsh|dash|ash|ksh|mksh|sh) :;;
   *) create_memfd;;
 esac

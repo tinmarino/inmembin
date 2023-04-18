@@ -59,6 +59,8 @@ xxd -s "$1" > /dev/null 2>&1  # From vim
 
 Ksh is not supporting the `$(( $1 + 1 ))` arithmetic. This is unfortunate, I would have prefered to use tail like @arget13, just for personal afinity.
 
+Silence error to avoid: error reading standard input: Bad file descriptor, which I do not care
+
 # Credit
 
 Copied from [arget13/ddsc.sh](https://github.com/arget13/DDexec/blob/49498ff6cc0bff4afe848565e6fe7d0558fab5f1/ddsc.sh) => see credit there
