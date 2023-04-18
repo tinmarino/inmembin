@@ -5,15 +5,22 @@
 Ex: bash ./in_mem_bin.sh & sleep 0.3; cp $(command which echo) /proc/$!/fd/4; /proc/$!/fd/4 toto
 '
 
+# Global architecture
 ARCH=$(uname -m)  # x86_64 or aarch64
 
+# Clause: leave is CPU not supported
+case $ARCH in x86_64|aarch64):;; *)
+  echo "DDexec: Error, this architecture is not supported." >&2
+  exit 1;;
+esac
+
 create_memfd(){
-  : 'Main: no argument'
+  : 'Main function: no argument, no return!'
   # Craft the shellcode to be written into the vDSO
   local shellcode_hex="$(craft_shellcode)"
   local shellcode_addr="$(get_section_start_addr '[vdso]')"
 
-  # Craft the jumper to jump to shellcode and written to a syscall ret PC
+  # Craft the jumper to be written to a syscall ret PC
   local jumper_hex="$(craft_jumper "$shellcode_addr")"
   local jumper_addr="$(get_read_syscall_ret_addr)"
   
@@ -27,10 +34,6 @@ create_memfd(){
   exec 3> /proc/self/mem
   seek "$jumper_addr" <&3
   unhexify "$jumper_hex" >&3
-
-  # Trigger jumper (this does not return)
-  read -r syscall_info < /proc/self/syscall
-  exec 3>&-
 }
 
 
@@ -44,9 +47,6 @@ craft_shellcode(){
     aarch64)
       out=080380d2400080d2010080d2010000d4
       out="${out}802888d2a088a8f2e00f1ff8e0030091210001cae82280d2010000d4c80580d2010000d4881580d2010000d4610280d2281080d2010000d4";;
-    *)
-      echo "DDexec: Error, this architecture is not supported." >&2
-      exit 1;;
   esac
   printf "%s" "$out"
 }
