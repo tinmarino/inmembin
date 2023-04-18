@@ -34,8 +34,6 @@ create_memfd(){
   jumper_addr=$(hex2dec "$jumper_addr")
   
   # Overwrite vDSO with our shellcode
-  echo Tin1
-  ls -l /proc/$$/fd
   exec 3> /proc/self/mem
   seek "$shellcode_addr" <&3
   unhexify "$shellcode_hex" >&3
@@ -43,8 +41,6 @@ create_memfd(){
 
   # Write jump instruction where it will be found shortly
   exec 3> /proc/self/mem
-  echo Tin2
-  ls -l /proc/$$/fd
   seek "$jumper_addr" <&3
   unhexify "$jumper_hex" >&3
 
@@ -84,7 +80,7 @@ unhexify(){
   '
   local escaped='' i=0 num=0
   while [ "$i" -lt "${#1}" ]; do
-    num=$((0x$(printf "%s" "$1" | cut -c$(( i+1 ))-$(( i+2 )))))
+    num=$(( 0x$(printf "%s" "$1" | cut -c$(( i+1 ))-$(( i+2 ))) ))
     escaped="$escaped\\$(printf "%o" "$num")"
     i=$(( i+2 ))
   done

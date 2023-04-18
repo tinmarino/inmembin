@@ -1,4 +1,5 @@
 ---
+# yamllint disable rule:line-length
 
 name: "CI: X86"
 
@@ -59,7 +60,9 @@ jobs:
             alpine)
               apk update
               apk add which bash
+              apk add coreutils
               [ -n "$apt" ] && apk add "$apt"
+              [ mksh = "$apt" ] && ln -s /bin/mksh /bin/ksh
               ;;
             debian)
               apt-get update
@@ -68,12 +71,10 @@ jobs:
             archlinux)
               pacman -Sy --noconfirm which
               [ -n "$apt" ] && pacman -Sy --noconfirm "$apt"
-              [ "$apt" = dash ] && ln -s /bin/dash /bin/ash
+              [ dash = "$apt" ] && ln -s /bin/dash /bin/ash
               ;;
           esac
           # Prepare the error message in case script breaks
-          shell_aligned=$(printf "%-4s" "${{ matrix.shell }}")
-          echo "SHELL=$shell_aligned" >> $GITHUB_ENV
           echo "MSG=failing" >> $GITHUB_ENV
           echo "COLOR=#ea4a5a" >> $GITHUB_ENV
           exit 0
@@ -96,6 +97,6 @@ jobs:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: 7b40042f91625feffeaa1941f7aba953
           filename: in_mem_bin_CI_${{ matrix.shell }}_on_${{ matrix.image }}.json
-          label: "${{ env.SHELL }} on ${{ matrix.image }}"
+          label: "${{ matrix.shell }} on ${{ matrix.image }}"
           message: ${{ env.MSG }}
           color: ${{ env.COLOR }}

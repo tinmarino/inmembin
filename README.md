@@ -29,7 +29,7 @@ cp "$(command which echo)" /proc/"$pid"/fd/4    # Fill it with a binary
 
 Requires: dd uname cut
 
-Supports: bash zsh ash ksh sh
+Supports: bash zsh ash (dash) ksh (mksh) sh
 
 # Verbose
 
