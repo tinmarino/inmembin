@@ -49,7 +49,6 @@ printf "%d" 0x10  # Posix compatible
 $(( 0x10 ))  # More readable
 ```
 
-
 Ksh (mksh) do not support 64 bit arithmetic and hardly support unsigned integer (I did not succeed). So the hex2dec: $((0x10)) used by @arget13 was replaced by printf "%d"
 
 ### seek
@@ -69,7 +68,6 @@ Ksh is not supporting the `$(( $1 + 1 ))` arithmetic. This is unfortunate, I wou
 
 Silence error to avoid: error reading standard input: Bad file descriptor, which I do not care
 
-
 ### endian
 
 String indexing is not supported in sh and ash. As shellcode are supposed to be small, just invert pair of chars by preprending each next pair (like vim `:g/.*/m0`).
@@ -78,26 +76,37 @@ Initially I was appending, but anyway the `+=` operator is not supported in ash.
 
 ### unhexlify
 
-TODO Doc
+In shell, variable cannot hold null byte as strings are zero terminated. So byte streams must be send to pipes
 
-### get_read_syscall_ret_addr
+```sh
+printf "\\$(printf "%o" 0x41)"  # Posix compatible
+printf "\x41"  # Bash but not posix compatible
+```
 
-TODO Doc
+### fetch addresses
 
-### get_section_start_addr
+Basic parsing of the /proc filesystem
 
-TODO Doc
+### craft shellcode and jumper
 
-### shellcode and jumper
-
-TODO Doc
+Embed hex strings of binaries, maybe with recently fetched pointers
 
 # Linux magic path
 
-TODO
-/proc/self/mem and maps ans syscalls
+* /proc/self/mem
+* /proc/self/maps
+* /proc/self/syscalls
+
+
 # Asm
 
+
+### 0/ debug
+
+```nasm
+"ELF"  ; 7f454c
+int    0x3  ; 0: cd 03 => just a sheetcheat
+```
 
 ```sh
 nasm syscall_memfd_create.asm -o syscall_memfd_create.bin
@@ -110,12 +119,6 @@ objdump -b binary -m i386:x86-64 -D -M intel tail.bin > tail.asm
 setarch x86_64 -R bash in_mem_bin.sh
 ```
 
-### 0/ debug: int 3
-
-```nasm
-"ELF"  ; 7f454c
-int    0x3  ; 0: cd 03 => just a sheetcheat
-```
 
 ### 1/ [dup2](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#arm_63)
 
@@ -133,7 +136,7 @@ syscall         ; d:   0f 05
 ### 2/ [memfd_create](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_319)
 
 ```c
-memfd_create(char* filename, unsigned int flags) // sig 0x164
+int memfd_create(char* filename, unsigned int flags) // sig 0x164
 // Return 4 <= FD
 ```
 
@@ -166,7 +169,10 @@ syscall           ;f:   0f 05
 ### 3/ [ftruncate](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_77)
 Optional, seems to be for early fail
 
-// Return 0 <= TODO
+```c
+int truncate(const char *path, off_t length);  // sig 0x4d
+// Return 0 => success
+```
 
 ```nasm
 mov    rdi,rax      ;14:   48 89 c7
@@ -175,11 +181,14 @@ syscall             ;19:   0f 05
 ```
 
 ### 4/ [pause](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_34)
-
 Wait for a signal
 
-// Return 0xfffffffffffffdfe  -514 <= TODO
+```c
+int pause(void);
+// Do not return or returns -1 in case a signal stopped it
+// -- but, for me, return 0xfffffffffffffdfe = -514
 // -- with debugger and ctrl-c
+```
 
 ```nasm
 mov    al,0x22      ;1b:   b0 22
@@ -194,3 +203,4 @@ Copied from [arget13/ddsc.sh](https://github.com/arget13/DDexec/blob/49498ff6cc0
 # Link
 
 * [syscall and arguments](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md)
+* [parent project (ddexec)](https://github.com/arget13/DDexec)
