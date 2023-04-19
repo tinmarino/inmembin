@@ -51,6 +51,9 @@ $(( 0x10 ))  # More readable
 
 Ksh (mksh) do not support 64 bit arithmetic and hardly support unsigned integer (I did not succeed). So the hex2dec: $((0x10)) used by @arget13 was replaced by printf "%d"
 
+### readmem
+
+
 ### seek
 
 Using the dd method
@@ -106,6 +109,9 @@ Embed hex strings of binaries, maybe with recently fetched pointers
 ```nasm
 "ELF"  ; 7f454c
 int    0x3  ; 0: cd 03 => just a sheetcheat
+
+pop eax       ; 58
+xor eax, eax  ; 31c0
 ```
 
 ```sh
@@ -194,6 +200,18 @@ int pause(void);
 mov    al,0x22      ;1b:   b0 22
 syscall             ;1d:   0f 05
 ```
+
+### 5/ [mprotect](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_10)
+
+```c
+int mprotect(void *addr, size_t len, int prot);  // sig 0xa
+```
+
+Page size is 4096
+
+7ffff7d14000
+
+# Temporary Dump
 
 
 # Credit
