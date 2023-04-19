@@ -14,6 +14,7 @@ jumper_addr=$(($(echo "$syscall_info" | cut -d' ' -f9)))
 exit_status=0
 scriptdir=$(dirname "$(readlink -f "$0")")
 cmd=$(head -n1 /proc/$$/cmdline | cut -d "" -f1)  # Get shell, not sure why alpine is adding a newline between arguments
+cmd=${cmd##*/}
 
 # Clause: check shell: call me with a known shell
 r_known_shell="bash|zsh|ash|dash|ksh|mksh|sh"
