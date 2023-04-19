@@ -31,12 +31,7 @@ Requires: dd uname cut
 
 Supports: bash zsh ash (dash) ksh (mksh) sh
 
-# Linux magic
-
-TODO
-/proc/self/mem and maps ans syscalls
-
-# Verbose code description
+# Verbose shell code description
 
 ### main
 
@@ -96,6 +91,105 @@ TODO Doc
 
 TODO Doc
 
+# Linux magic path
+
+TODO
+/proc/self/mem and maps ans syscalls
+# Asm
+
+
+```sh
+nasm syscall_memfd_create.asm -o syscall_memfd_create.bin
+objdump -b binary -m i386:x86-64 -D syscall_memfd_create.bin
+
+sudo xxd -s $((0x7f5a53314992)) -c 10000 -l 10000 -p /proc/$$/mem | xxd -r -p > tail.bin
+
+objdump -b binary -m i386:x86-64 -D -M intel tail.bin > tail.asm
+
+setarch x86_64 -R bash in_mem_bin.sh
+```
+
+### 0/ debug: int 3
+
+```nasm
+"ELF"  ; 7f454c
+int    0x3  ; 0: cd 03 => just a sheetcheat
+```
+
+### 1/ [dup2](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#arm_63)
+
+Arget13 is duplicating 0<-2 because his stdin was redirected from a pipe.
+
+```nasm
+xor    rax,rax  ; 0:   48 31 c0                
+mov    rsi,rax  ; 3:   48 89 c6                
+mov    al,0x2   ; 6:   b0 02                   
+mov    rdi,rax  ; 8:   48 89 c7                
+mov    al,0x21  ; b:   b0 21                   
+syscall         ; d:   0f 05                   
+```
+
+### 2/ [memfd_create](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_319)
+
+```c
+memfd_create(char* filename, unsigned int flags) // sig 0x164
+// Return 4 <= FD
+```
+
+If filename is NULL => Segmentation fault (I think this is subobtimal impl from Linux kernel as the name is useless)
+
+
+Original: (20 bytes, including 8 to set filename string)
+
+68444541444889e74831f64889f0b401b03f0f054889c7b04d0f05b0220f05
+
+```nasm
+push   0x44414544   ; 0:   68 44 45 41 44 => "DEAD"
+mov    rdi,rsp      ; 5:   48 89 e7 => arg1: Point to "DEAD"
+xor    rsi,rsi      ; 8:   48 31 f6 => arg2: Flag 0
+mov    rax,rsi      ; b:   48 89 f0
+mov    ah,0x1       ; e:   b4 01
+mov    al,0x3f      ;10:   b0 3f
+syscall             ;12:   0f 05
+```
+
+Naive: For comparison, here is my naive intent (17 bytes but crash)
+
+```nasm
+mov    eax,0x13f  ;0:   b8 3f 01 00 00          
+mov    edi,0x0    ;5:   bf 00 00 00 00          
+mov    esi,0x0    ;a:   be 00 00 00 00          
+syscall           ;f:   0f 05                   
+```
+
+### 3/ [ftruncate](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_77)
+Optional, seems to be for early fail
+
+// Return 0 <= TODO
+
+```nasm
+mov    rdi,rax      ;14:   48 89 c7
+mov    al,0x4d      ;17:   b0 4d
+syscall             ;19:   0f 05
+```
+
+### 4/ [pause](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_34)
+
+Wait for a signal
+
+// Return 0xfffffffffffffdfe  -514 <= TODO
+// -- with debugger and ctrl-c
+
+```nasm
+mov    al,0x22      ;1b:   b0 22
+syscall             ;1d:   0f 05
+```
+
+
 # Credit
 
 Copied from [arget13/ddsc.sh](https://github.com/arget13/DDexec/blob/49498ff6cc0bff4afe848565e6fe7d0558fab5f1/ddsc.sh) => see credit there
+
+# Link
+
+* [syscall and arguments](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md)
