@@ -20,11 +20,11 @@ cmd=${cmd##*/}
 r_known_shell="bash|zsh|ash|dash|ksh|mksh|sh"
 case $cmd in
   bash|zsh|ash|dash|ksh|mksh|sh) :;;
-  *) echo -e "\e[31mError: call me with a command in $r_known_shell (got $cmd: $(echo "$cmd"|xxd))\nTip: ash test_in_mem_bin.sh\e[0m"; exit 1;;
+  *) echo -e "\e[31mError: call me with a command in $r_known_shell (got $cmd: $(echo "$cmd"|xxd))\nTip: ash test_inmembin.sh\e[0m"; exit 1;;
 esac
 
 main_test(){
-  "$cmd" "$scriptdir"/../in_mem_bin.sh &
+  "$cmd" "$scriptdir"/../inmembin.sh &
   pid=$!
   sleep 0.3
   

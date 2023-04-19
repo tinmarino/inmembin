@@ -2,7 +2,7 @@
 : 'Open next available FD with a memfd
 -- Used to execute binary in memory (without touching HD)
 
-Ex: bash ./in_mem_bin.sh & sleep 0.3; cp $(command which echo) /proc/$!/fd/4; /proc/$!/fd/4 toto
+Ex: bash ./inmembin.sh & sleep 0.3; cp $(command which echo) /proc/$!/fd/4; /proc/$!/fd/4 toto
 '
 
 # Global architecture

@@ -83,7 +83,7 @@ jobs:
         shell: bash
         # continue-on-error: true  # commented as wrong report
         run: |
-          ${{ matrix.shell }} test/test_in_mem_bin.sh
+          ${{ matrix.shell }} test/test_inmembin.sh
           ret=$?
           if [ 0 = "$ret" ]; then
             echo "MSG=passing" >> $GITHUB_ENV

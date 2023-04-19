@@ -58,7 +58,8 @@ Using the dd method
 
 ```sh
 dd bs=1 skip="$1" > /dev/null 2>&1  # From coreutils
-tail -c +$(($1 + 1)) >/dev/null 2>&1  # From coreutils + Bad for ksh
+tail -c +$(( $1 + 1 )) >/dev/null 2>&1  # From coreutils + Bad for ksh
+od -j $(( $1 + 1 )) -N 0 >/dev/null 2>&1  # From coreutils
 cmp -i "$1" /dev/null > /dev/null 2>&1  # From diffutils
 hexdump -s "$1" > /dev/null 2>&1  # From util-linux
 xxd -s "$1" > /dev/null 2>&1  # From vim
