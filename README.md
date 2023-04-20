@@ -209,10 +209,13 @@ int mprotect(void *addr, size_t len, int prot);  // sig 0xa
 
 Page size is 4096
 
-7ffff7d14000
 
 # Temporary Dump
 
+Jumper addr: page, hex, dec
+7ffff7d14000
+7ffff7d14992
+140737351076242
 
 # Credit
 

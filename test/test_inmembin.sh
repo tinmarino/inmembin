@@ -24,9 +24,30 @@ case $cmd in
 esac
 
 main_test(){
+  test_sync
+}
+
+test_async(){
   "$cmd" "$scriptdir"/../inmembin.sh &
   pid=$!
-  sleep 0.3
+  sleep 2
+  
+  if ! is_alpine; then
+    cp -f "$(command which echo)" /proc/"$pid"/fd/4
+    out=$(/proc/"$pid"/fd/4 -e arg1 arg2)
+  else
+    cat "$(command which coreutils)" > /proc/"$pid"/fd/4    # Fill it with a binary
+    out=$(/proc/"$pid"/fd/4 --coreutils-prog=echo -e arg1 arg2)
+  fi
+  
+  equal "arg1 arg2" "$out" "ddsc_min.sh should work with $cmd"
+}
+
+test_sync(){
+  : 'Implemented, TODO remove setarch'
+  source "$scriptdir"/../inmembin.sh
+  create_memfd
+  pid=$$
   
   if ! is_alpine; then
     cp -f "$(command which echo)" /proc/"$pid"/fd/4
