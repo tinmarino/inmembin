@@ -18,15 +18,22 @@ esac
 create_memfd(){
   : 'Main function: no argument, no return!'
   # Craft the shellcode to be written into the vDSO
-  shellcode_hex="$(craft_shellcode)"
   shellcode_addr_hex="$(get_section_start_addr '[vdso]')"
   shellcode_addr_dec="$(hex2dec "0x$shellcode_addr_hex")"
 
   # Craft the jumper to be written to a syscall ret PC
-  jumper_hex="$(craft_jumper "$shellcode_addr_dec")"
   jumper_addr_hex="$(get_read_syscall_ret_addr)"
+  while [ ${#jumper_addr_hex} -lt 16 ]; do
+    jumper_addr_hex="0$jumper_addr_hex"
+  done
+  jumper_addr_hex_endian="$(endian "$jumper_addr_hex")"
+  jumper_addr_hex_endian_page="0000${jumper_addr_hex_endian#????}"  # Protect 16 pages !
   jumper_addr_dec="$(hex2dec "0x$jumper_addr_hex")"
   
+  # Craft shellcode and jumper
+  shellcode_hex="$(craft_shellcode)"
+  jumper_hex="$(craft_jumper "$shellcode_addr_dec")"
+
   # Backup
   [ "$DEBUG" != 0 ] && >&2 echo Read1
   shellcode_save_hex=$(read_mem "$shellcode_addr_dec" $(( ${#shellcode_hex} / 2 )))
@@ -34,11 +41,13 @@ create_memfd(){
   #jumper_save_hex=$(read_mem "$jumper_addr" $(( ${#jumper_hex} / 2 )))
 
   [ "$DEBUG" != 0 ] && >&2 echo "InMemBin:
-    shellcode_addr=$shellcode_addr_hex
+    shellcode_addr_hex=$shellcode_addr_hex
     shellcode_hex=$shellcode_hex
     shellcode_save_hex=$shellcode_save_hex
 
-    jumper_addr=$jumper_addr_hex
+    jumper_addr____________=$jumper_addr_hex
+    jumper_addr_endian_____=$jumper_addr_hex_endian
+    jumper_addr_endian_page=$jumper_addr_hex_endian_page
     jumper_hex=$jumper_hex
     jumper_save_hex=$jumper_hex
   "
@@ -52,13 +61,14 @@ create_memfd(){
   write_mem "$jumper_addr_dec" "$jumper_hex"
 
   [ "$DEBUG" != 0 ] && >&2 echo Write3
-  #write_mem "$shellcode_addr" "$shellcode_save_hex"
+  write_mem "$shellcode_addr_dec" "$shellcode_save_hex"
 
   # Done by shellcode
-  #[ "$DEBUG" != 0 ] && >&2 echo Write4
+  [ "$DEBUG" != 0 ] && >&2 echo Write4
   #write_mem "$jumper_addr" "$jumper_save_hex"
 
   [ "$DEBUG" != 0 ] && >&2 echo "InMemBin: Function is back"
+  ls -l /proc/$$/fd
 }
 
 
@@ -93,7 +103,9 @@ craft_shellcode(){
       out="${out}68444541444889e74831f64889f0b401b03f0f054889c7b04d"
       out="${out}5831c0"  # pop eax, xor eax, eax
       # memprotect + mov + jump back
-      out="${out}b80a00000048bf0040d1f7ff7f0000ba07000000be0c0000000f0549bf9249d1f7ff7f000041c707483d00f041c74704ffff775641c74708c30f1f4441ffe7"
+      #out="${out}b80a00000048bf0040d1f7ff7f0000ba07000000be0c0000000f0549bf9249d1f7ff7f000041c707483d00f041c74704ffff775641c74708c30f1f4441ffe7"
+      #out="${out}b80a00000048bfcacacacacacacacaba07000000be0c0000000f0549bfcbcbcbcbcbcbcbcb41c707483d00f041c74704ffff775641c74708c30f1f4441ffe7"
+      out="${out}b80a00000048bf${jumper_addr_hex_endian_page}ba07000000be000001000f0549bf${jumper_addr_hex_endian}41c707483d00f041c74704ffff775641c74708c30f1f4441ffe7"
       ;;
     aarch64)
       out=080380d2400080d2010080d2010000d4

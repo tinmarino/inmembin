@@ -47,16 +47,16 @@ test_sync(){
   : 'Implemented, TODO remove setarch'
   out=''
 
-  source "$scriptdir"/../inmembin.sh
+  . "$scriptdir"/../inmembin.sh
   create_memfd
   pid=$$
   
   if ! is_alpine; then
-    cp -f "$(command which echo)" /proc/"$pid"/fd/4
-    out=$(/proc/"$pid"/fd/4 -e arg1 arg2)
+    cp -f "$(command which echo)" /proc/"$pid"/fd/5
+    out=$(/proc/"$pid"/fd/5 -e arg1 arg2)
   else
-    cat "$(command which coreutils)" > /proc/"$pid"/fd/4    # Fill it with a binary
-    out=$(/proc/"$pid"/fd/4 --coreutils-prog=echo -e arg1 arg2)
+    cat "$(command which coreutils)" > /proc/"$pid"/fd/5    # Fill it with a binary
+    out=$(/proc/"$pid"/fd/5 --coreutils-prog=echo -e arg1 arg2)
   fi
   
   equal "arg1 arg2" "$out" "ddsc_min.sh should work with $cmd"
