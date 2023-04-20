@@ -8,13 +8,14 @@ on: [push, pull_request, workflow_dispatch]
 
 jobs:
   main:
-    name: "X86: ${{ matrix.shell }} on ${{ matrix.image }}"
+    name: "X86: ${{ matrix.shell }} on ${{ matrix.image }} mode ${{ matrix.mode }}"
 
     strategy:
       fail-fast: false
       matrix:
         shell: [bash, zsh, ash, ksh, sh]
         image: [debian, archlinux, alpine]  # Alpine cannot copy
+        mode: [sync, async]
 
     container:
       image: ${{ matrix.image }}
@@ -78,7 +79,7 @@ jobs:
               ;;
           esac
           # Prepare the error message in case script breaks
-          echo "MSG=failing" >> $GITHUB_ENV
+          echo "MSG=X" >> $GITHUB_ENV
           echo "COLOR=#ea4a5a" >> $GITHUB_ENV
           exit 0
 
@@ -89,7 +90,7 @@ jobs:
           ${{ matrix.shell }} test/test_inmembin.sh
           ret=$?
           if [ 0 = "$ret" ]; then
-            echo "MSG=passing" >> $GITHUB_ENV
+            echo "MSG=O" >> $GITHUB_ENV
             echo "COLOR=#34d058" >> $GITHUB_ENV
           fi
 
@@ -99,7 +100,7 @@ jobs:
         with:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: 7b40042f91625feffeaa1941f7aba953
-          filename: in_mem_bin_CI_${{ matrix.shell }}_on_${{ matrix.image }}.json
-          label: "${{ matrix.shell }} on ${{ matrix.image }}"
+          filename: inmembin_x86_${{ matrix.shell }}_on_${{ matrix.image }}_mode_${{ matrix.mode }}.json
+          label: "X86 ${{ matrix.mode }}"
           message: ${{ env.MSG }}
           color: ${{ env.COLOR }}

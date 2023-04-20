@@ -24,48 +24,65 @@ case $cmd in
 esac
 
 main_test(){
-  test_async
-  test_sync
+  case "$*" in *--async*) test_async;; esac
+  case "$*" in *--sync*) test_sync;; esac
   return "$exit_status"
 }
 
+
 test_async(){
+  echo -e "\e[34mTesting ASYNC\e[0m"
   "$cmd" "$scriptdir"/../inmembin.sh &
   pid=$!
   sleep 2
   
-  if ! is_alpine; then
-    cp -f "$(command which echo)" /proc/"$pid"/fd/5
-    out=$(/proc/"$pid"/fd/5 -e arg1 arg2)
-  else
-    cat "$(command which coreutils)" > /proc/"$pid"/fd/5    # Fill it with a binary
-    out=$(/proc/"$pid"/fd/5 --coreutils-prog=echo -e arg1 arg2)
-  fi
+  get_fd_number "$pid"; fd=$?
+  out=$(execute_echo_from_file "/proc/$pid/fd/$fd")
   
-  equal "arg1 arg2" "$out" "shell=$cmd,mode=async: executing script should create the fd"
+  equal "arg1 arg2" "$out" "shell=$cmd,mode=async: executing script should create the fd (fd=$fd,pid=$pid)"
 }
+
 
 test_sync(){
   : 'Implementing, TODO remove setarch'
+  echo -e "\e[34mTesting SYNC\e[0m"
   out=''
 
   . "$scriptdir"/../inmembin.sh
   create_memfd
   pid=$$
+  echo "Sync: will send read syscall"
   read -r syscall_info < /proc/self/syscall
-  sleep 0.3
+  sleep 0.1
   ls -l /proc/$pid/fd
   
-  if ! is_alpine; then
-    cp -f "$(command which echo)" /proc/"$pid"/fd/3
-    out=$(/proc/"$pid"/fd/3 -e arg1 arg2)
-  else
-    cat "$(command which coreutils)" > /proc/"$pid"/fd/3    # Fill it with a binary
-    out=$(/proc/"$pid"/fd/3 --coreutils-prog=echo -e arg1 arg2)
-  fi
-  
-  equal "arg1 arg2" "$out" "shell=$cmd,mode=sync: executign function should fill current shell"
+  get_fd_number "$pid"; fd=$?
+  out=$(execute_echo_from_file "/proc/$pid/fd/$fd")
+
+  equal "arg1 arg2" "$out" "shell=$cmd,mode=sync: executign function should fill current shell (fd=$fd,pid=$pid)"
 }
+
+
+execute_echo_from_file(){
+  echo_from_pid=""
+
+  if ! is_alpine; then
+    cp -f "$(command which echo)" "$1"
+    echo_from_pid=$("$1" -e arg1 arg2)
+  else
+    cat "$(command which coreutils)" > "$1"    # Fill it with a binary
+    echo_from_pid=$("$1" --coreutils-prog=echo -e arg1 arg2)
+  fi
+  printf "%s" "$echo_from_pid"
+}
+
+
+get_fd_number(){
+  for fd_number in 5 4 3; do
+    echo toto > /proc/"$1"/fd/"$fd_number" 2> /dev/null && return "$fd_number"
+  done
+}
+
 
 equal(){
   : 'Helper function
@@ -73,13 +90,14 @@ equal(){
   '
   msg=''
   if [ "$1" = "$2" ]; then
-    msg="\e[32mSUCCESS: $3\e[0m: (got '$1')"
+    msg="\e[32mSUCCESS: $3""\e[0m: (got '$1')"
   else
     exit_status=1
     msg="\e[31mERROR  : $3\e[0m: (expected '$1' and got '$2')"
   fi
   echo -e "$msg"
 }
+
 
 is_alpine(){
   : 'Alpine is so small, all commands are busybox'
@@ -88,4 +106,4 @@ is_alpine(){
   return 1
 }
 
-main_test || exit "$exit_status"
+main_test "$@" || exit "$exit_status"

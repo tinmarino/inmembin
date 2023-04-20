@@ -60,19 +60,18 @@ create_memfd(){
   # Write jump instruction where it will be found shortly
   [ "$DEBUG" != 0 ] && >&2 echo Write2
   write_mem "$jumper_addr_dec" "$jumper_hex"
+  # -- Wait: Fd still not created at this point
 
-  [ "$DEBUG" != 0 ] && >&2 echo Write3
-  if [ "$SOURCED" = 0 ] && [ bash != "$SHELL" ]; then
+  [ "$DEBUG" != 0 ] && >&2 echo "Write3: sourced=$SOURCED"
+  #if [ "$SOURCED" = 0 ] && [ bash != "${SHELL##*/}" ]; then
+  #if [ "$SOURCED" = 0 ] && [ bash != "${SHELL}" ]; then
     # I do not know why bash freeze on this line
     write_mem "$shellcode_addr_dec" "$shellcode_save_hex"
-  fi
-
-  # Done by shellcode
-  [ "$DEBUG" != 0 ] && >&2 echo Write4
-  #write_mem "$jumper_addr" "$jumper_save_hex"
+    ls -l /proc/$$/fd
+  # -- OK: Fd still not created
+  #fi
 
   [ "$DEBUG" != 0 ] && >&2 echo "InMemBin: Function is back"
-  ls -l /proc/$$/fd
 }
 
 
@@ -197,7 +196,7 @@ elif [ -n "$BASH_VERSION" ]; then
   (return 0 2>/dev/null) && SOURCED=1
 else # All other shells: examine $0 for known shell binary filenames.
   # Detects `sh` and `dash`; add additional shell filenames as needed.
-  case ${0##*/} in sh|-sh|dash|-dash) SOURCED=1;; esac
+  case ${0##*/} in sh|-sh|ash|-ash|dash|-dash) SOURCED=1;; esac
 fi
 
 [ "$SOURCED" = 0 ] && { create_memfd; tail -f /dev/null; }
