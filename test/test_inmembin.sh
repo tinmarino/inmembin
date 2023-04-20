@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-# shellcheck disable=SC3037  # In POSIX sh, echo flags are undefined
+#!/bin/sh
+# shellcheck disable=SC3037,SC1091  # In POSIX sh, echo flags are undefined | not following
 : '
 TODO:
 tcsh
@@ -25,6 +25,7 @@ esac
 
 main_test(){
   test_sync
+  return "$exit_status"
 }
 
 test_async(){
@@ -83,5 +84,4 @@ is_alpine(){
   return 1
 }
 
-main_test
-exit "$exit_status"
+main_test || exit "$exit_status"
