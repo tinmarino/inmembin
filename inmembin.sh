@@ -1,5 +1,4 @@
 #!/bin/sh
-# shellcheck disable=SC2059  # Don't use variables in the p...t string
 
 : 'Open next available FD with a memfd
 -- Used to execute binary in memory (without touching HD)
@@ -58,26 +57,33 @@ create_memfd(){
   "
 
   # Overwrite vDSO with our shellcode
+  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin: Write shellcode"
   write_mem "$shellcode_addr_dec" "$shellcode_hex"
 
   # Write jump instruction where it will be found shortly
-  write_mem "$jumper_addr_dec" "$jumper_hex"
+  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin: Write jumper"
+  #write_mem "$jumper_addr_dec" "$jumper_hex"
+  exec 3> /proc/self/mem
+  seek "$jumper_addr_dec" <&3
+  unhexify "$jumper_hex" >&3
   # -- Wait: Fd still not created at this point
 
   # Trigger
   [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin: Trigger"
-  read -r syscall_info < /proc/self/syscall
-  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 ls -l /proc/$$/fd
+  if [ -n "$KSH_VERSION" ] || [ "$INMEMBIN_SOURCED" = 0 ]; then
+    read -r syscall_info < /proc/self/syscall
+  fi
+  #[ "$INMEMBIN_DEBUG" != 0 ] && >&2 ls -l /proc/$$/fd
 
-  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin: Write3: sourced=$INMEMBIN_SOURCED"
+  #[ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin: Write3: sourced=$INMEMBIN_SOURCED"
   #if [ "$INMEMBIN_SOURCED" = 0 ] && [ bash != "${SHELL##*/}" ]; then
   #if [ "$INMEMBIN_SOURCED" = 0 ] && [ bash != "${SHELL}" ]; then
     # I do not know why bash freeze on this line
   if [ -z "$KSH_VERSION" ]; then
     # This destroys the FD with ksh93
-    : #write_mem "$shellcode_addr_dec" "$shellcode_save_hex"
+    write_mem "$shellcode_addr_dec" "$shellcode_save_hex"
   fi
-  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 ls -l /proc/$$/fd
+  #[ "$INMEMBIN_DEBUG" != 0 ] && >&2 ls -l /proc/$$/fd
   # -- OK: Fd still not created
   #fi
 
@@ -105,33 +111,46 @@ write_mem(){
 
 craft_shellcode(){
   : 'Craft hex shellcode with: dup2(2, 0); memfd_create;'
-  out=''
+  out_sc=''
   # Divide in 3 dw
   save_rest="$jumper_save_hex"
   tail="${save_rest#????????}"; save_dw1="${save_rest%"$tail"}"; save_rest=$tail
   tail="${save_rest#????????}"; save_dw2="${save_rest%"$tail"}"; save_rest=$tail
   tail="${save_rest#????????}"; save_dw3="${save_rest%"$tail"}"; save_rest=$tail
 
+  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "
+    save_dw1=$save_dw1
+    save_dw2=$save_dw2
+    save_dw3=$save_dw3
+  "
+
   case $INMEMBIN_ARCH in
     x86_64)
-      out=4831c04889c6b0024889c7b0210f05  # dup
+      out_sc=4831c04889c6b0024889c7b0210f05  # dup
       ## ORIGIN
-      #out="${out}68444541444889e74831f64889f0b401b03f0f054889c7b04d0f05b0220f05";;  # memfd
+      #out_sc="${out_sc}68444541444889e74831f64889f0b401b03f0f054889c7b04d0f05b0220f05";;  # memfd
 
       ## Debug with jump
-      out="${out}68444541444889e74831f64889f0b401b03f0f054889c7b04d"
-      out="${out}5831c0"  # pop eax, xor eax, eax
+      out_sc="${out_sc}68444541444889e74831f64889f0b401b03f0f054889c7b04d"
+      out_sc="${out_sc}5831c0"  # pop eax, xor eax, eax
       # memprotect + mov + jump back
-      #out="${out}b80a00000048bf0040d1f7ff7f0000ba07000000be0c0000000f0549bf9249d1f7ff7f000041c707483d00f041c74704ffff775641c74708c30f1f4441ffe7"
-      #out="${out}b80a00000048bfcacacacacacacacaba07000000be0c0000000f0549bfcbcbcbcbcbcbcbcb41c707483d00f041c74704ffff775641c74708c30f1f4441ffe7"
-      out="${out}b80a00000048bf${jumper_addr_hex_endian_page}ba07000000be000001000f0549bf${jumper_addr_hex_endian}"
-      out="${out}41c707${save_dw1}41c74704${save_dw2}41c74708${save_dw3}41ffe7"
+      #out_sc="${out_sc}b80a00000048bf0040d1f7ff7f0000ba07000000be0c0000000f0549bf9249d1f7ff7f000041c707483d00f041c74704ffff775641c74708c30f1f4441ffe7"
+      #out_sc="${out_sc}b80a00000048bfcacacacacacacacaba07000000be0c0000000f0549bfcbcbcbcbcbcbcbcb41c707483d00f041c74704ffff775641c74708c30f1f4441ffe7"
+      # mov 15, jumper addr
+      out_sc="${out_sc}49bf${jumper_addr_hex_endian}"
+      # memprotect RW
+      out_sc="${out_sc}b80a00000048bf${jumper_addr_hex_endian_page}ba03000000be000001000f05"
+      out_sc="${out_sc}41c707${save_dw1}41c74704${save_dw2}41c74708${save_dw3}"
+      # memptrotect RX
+      out_sc="${out_sc}b80a00000048bf${jumper_addr_hex_endian_page}ba05000000be000001000f05"
+      # Jump r15
+      out_sc="${out_sc}41ffe7"
       ;;
     aarch64)
-      out=080380d2400080d2010080d2010000d4
-      out="${out}802888d2a088a8f2e00f1ff8e0030091210001cae82280d2010000d4c80580d2010000d4881580d2010000d4610280d2281080d2010000d4";;
+      out_sc=080380d2400080d2010080d2010000d4
+      out_sc="${out_sc}802888d2a088a8f2e00f1ff8e0030091210001cae82280d2010000d4c80580d2010000d4881580d2010000d4610280d2281080d2010000d4";;
   esac
-  printf "%s" "$out"
+  printf "%s" "$out_sc"
 }
 
 
@@ -139,42 +158,40 @@ craft_jumper(){
   : 'Craft hex code to jump to (arg1) hex address
   -- Trampoline to jump to the shellcode
   '
-  out="$(printf %016x "$1")"
+  out_jp="$(printf %016x "$1")"
   case $INMEMBIN_ARCH in
-    x86_64) out="48b8$(endian "$out")ffe0";;
-    aarch64) out="4000005800001fd6$(endian "$out")";;
+    x86_64) out_jp="48b8$(endian "$out_jp")ffe0";;
+    aarch64) out_jp="4000005800001fd6$(endian "$out_jp")";;
   esac
-  printf "%s" "$out"
+  printf "%s" "$out_jp"
 }
 
 
 get_section_start_addr(){
   : 'Print offset of start of section with string (arg1)'
-  out=""
   while read -r line; do
-    case $line in *"$1"*) out=$(printf "%s" "$line" | cut -d- -f1); break; esac
+    case $line in *"$1"*) printf "%s" "$line" | cut -d- -f1; break; esac
   done < /proc/$$/maps
-  printf "%s" "$out"
 }
 
 
 get_read_syscall_ret_addr(){
   : 'Print decimal addr where a next syscall will return, to put jumper, as trigger'
   read -r syscall_info < /proc/self/syscall
-  out="$(printf "%s" "$syscall_info" | cut -d' ' -f9)"
-  printf "%s" "${out##??}"  # Remove the 0x prefix
+  out_ret="$(printf "%s" "$syscall_info" | cut -d' ' -f9)"
+  printf "%s" "${out_ret##??}"  # Remove the 0x prefix
 }
 
 
 endian(){
   : 'Change endianness of hex string (arg1)'
-  out='' rest="$1"
+  out_endian='' rest="$1"
   while [ -n "$rest" ]; do
     tail="${rest#??}"
-    out="${rest%"$tail"}$out"
+    out_endian="${rest%"$tail"}$out_endian"
     rest="$tail"
   done
-  printf "%s" "$out"
+  printf "%s" "$out_endian"
 }
 
 
@@ -209,7 +226,7 @@ elif [ -n "$BASH_VERSION" ]; then
   (return 0 2>/dev/null) && INMEMBIN_SOURCED=1
 else # All other shells: examine $0 for known shell binary filenames.
   # Detects sh and dash and ksh; add additional shell filenames as needed.
-  case ${0##*/} in sh|-sh|ash|-ash|dash|-dash|ksh|-ksh|ksh93|test_inmembin.sh|inmembin) INMEMBIN_SOURCED=1;; esac
+  case ${0##*/} in sh|-sh|ash|-ash|dash|-dash|ksh|-ksh|ksh93|test_inmembin.sh) INMEMBIN_SOURCED=1;; esac
 fi
 
 [ "$INMEMBIN_SOURCED" = 0 ] && { create_memfd; tail -f /dev/null; }

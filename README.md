@@ -17,7 +17,7 @@ Execute binary code from shell without touching the filesystem. Hard copied from
 # Quickstart
 
 ```sh
-git clone --depth=1 https://github.com/tinmarino/inmembin.sh InMemBin && cd InMemBin
+git clone --depth=1 https://github.com/tinmarino/inmembin && cd inmembin
 
 /proc/self/exe ./inmembin.sh & pid=$!         # Create memfd
 sleep 0.3 

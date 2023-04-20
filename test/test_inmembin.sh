@@ -54,7 +54,7 @@ test_sync(){
   out=''
 
   [ "$INMEMBIN_DEBUG" != 0 ] && echo "Test: Source"
-  . "$scriptdir"/../inmembin.sh
+  INMEMBIN_SOURCED=1 . "$scriptdir"/../inmembin.sh
   [ "$INMEMBIN_DEBUG" != 0 ] && echo "Test: Execute"
   create_memfd
   pid=$$

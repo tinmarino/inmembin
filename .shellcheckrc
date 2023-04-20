@@ -10,4 +10,7 @@ disable=SC2016
 # -- I prefer in one line
 disable=SC2155
 
+# Don't use variables in the printf format string
+disable=SC2059
+
 # vim: ft=toml
