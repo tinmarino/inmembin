@@ -71,7 +71,7 @@ equal(){
   : 'Helper function
     Ex: equal 0 0 "yes it works"
   '
-  local msg=''
+  msg=''
   if [ "$1" = "$2" ]; then
     msg="\e[32mSUCCESS: $3\e[0m: (got '$1')"
   else

@@ -192,7 +192,7 @@ if [ -n "$ZSH_VERSION" ]; then
   case $ZSH_EVAL_CONTEXT in *:file) SOURCED=1;; esac
 elif [ -n "$KSH_VERSION" ]; then
   # shellcheck disable=SC2296  # Parameter expansions can't start with ..
-  [ "$(cd -- "$(dirname -- "$0")" && pwd -P)/$(basename -- "$0")" != "$(cd -- "$(dirname -- "${.sh.file}")" && pwd -P)/$(basename -- "${.sh.file}")" ] && SOURCED=1
+  [ "$(basename -- "$0")" = ksh ] && SOURCED=1
 elif [ -n "$BASH_VERSION" ]; then
   (return 0 2>/dev/null) && SOURCED=1
 else # All other shells: examine $0 for known shell binary filenames.
