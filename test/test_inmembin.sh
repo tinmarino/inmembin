@@ -24,8 +24,8 @@ case $cmd in
 esac
 
 main_test(){
-  test_sync
   test_async
+  test_sync
   return "$exit_status"
 }
 
