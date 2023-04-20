@@ -28,8 +28,8 @@ create_memfd(){
   # Backup
   [ "$DEBUG" != 0 ] && >&2 echo Read1
   shellcode_save_hex=$(read_mem "$shellcode_addr" $(( ${#shellcode_hex} / 2 )))
-  [ "$DEBUG" != 0 ] && >&2 echo Read2
-  jumper_save_hex=$(read_mem "$jumper_addr" $(( ${#jumper_hex} / 2 )))
+  #[ "$DEBUG" != 0 ] && >&2 echo Read2
+  #jumper_save_hex=$(read_mem "$jumper_addr" $(( ${#jumper_hex} / 2 )))
 
   [ "$DEBUG" != 0 ] && >&2 echo "InMemBin:
     shellcode_addr=$shellcode_addr
@@ -149,12 +149,13 @@ endian(){
 
 
 unhexify(){
-  : 'Convert hex string (arg1) to binary stream (stdout)'
-  escaped='' i=0 num=0
-  while [ "$i" -lt "${#1}" ]; do
-    num=$(( 0x$(printf "%s" "$1" | cut -c$(( i+1 ))-$(( i+2 ))) ))
-    escaped="$escaped\\$(printf "%o" "$num")"
-    i=$(( i+2 ))
+  : 'Convert hex string (arg1) to binary stream (stdout): see README'
+  escaped=''
+  rest="$1"    # The loop will consume the variable, so make a temp copy first
+  while [ -n "$rest" ]; do
+    tail="${rest#??}"  # All but the 2 first characters of the string
+    escaped="$escaped\\$(printf "%o" "$(( 0x"${rest%"$tail"}" ))")"   # Remove $rest, and you're left with the 2 first character
+    rest="$tail"
   done
   # shellcheck disable=SC2059  # Don't use variables in the p...t string
   printf "$escaped"

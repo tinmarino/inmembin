@@ -219,7 +219,6 @@ Jumper addr: page, hex, dec
 
 # TODO
 
-* [ ] Fasten unhexify
 * [ ] Remove the hardcoded setarch
 
 # Credit
