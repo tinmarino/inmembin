@@ -1,5 +1,7 @@
 #!/bin/sh
+# shellcheck disable=SC2059  # Don't use variables in the p...t string
 # shellcheck disable=SC3037,SC1091  # In POSIX sh, echo flags are undefined | not following
+
 : '
 TODO:
 tcsh
@@ -10,6 +12,8 @@ tail -c +$(($1 + 1)) >/dev/null 2>&1
 jumper_addr=$(($(echo "$syscall_info" | cut -d' ' -f9)))
 '
 
+: "${INMEMBIN_DEBUG:=1}"
+
 # Global
 exit_status=0
 scriptdir=$(dirname "$(readlink -f "$0")")
@@ -17,11 +21,12 @@ cmd=$(head -n1 /proc/$$/cmdline | cut -d "" -f1)  # Get shell, not sure why alpi
 cmd=${cmd##*/}
 
 # Clause: check shell: call me with a known shell
-r_known_shell="bash|zsh|ash|dash|ksh|mksh|sh"
+r_known_shell="bash|zsh|ash|dash|ksh|mksh|sh|ksh93"
 case $cmd in
-  bash|zsh|ash|dash|ksh|mksh|sh) :;;
-  *) echo -e "\e[31mError: call me with a command in $r_known_shell (got $cmd: $(echo "$cmd"|xxd))\nTip: ash test_inmembin.sh\e[0m"; exit 1;;
+  bash|zsh|ash|dash|ksh|mksh|sh|ksh93) :;;
+  *) printf "%b\n" "\033[31mError: call me with a command in $r_known_shell (got $cmd: $(echo "$cmd"|xxd))\nTip: ash test_inmembin.sh\033[0m"; exit 1;;
 esac
+
 
 main_test(){
   case "$*" in *--async*) test_async;; esac
@@ -31,27 +36,29 @@ main_test(){
 
 
 test_async(){
-  echo -e "\e[34mTesting ASYNC\e[0m"
+  printf "%bTesting %4s %5s:%b " "\033[34m" "$cmd" async "\033[0m"
   "$cmd" "$scriptdir"/../inmembin.sh &
   pid=$!
   sleep 2
-  
+
   get_fd_number "$pid"; fd=$?
   out=$(execute_echo_from_file "/proc/$pid/fd/$fd")
-  
+
   equal "arg1 arg2" "$out" "shell=$cmd,mode=async: executing script should create the fd (fd=$fd,pid=$pid)"
 }
 
 
 test_sync(){
   : 'Implementing, TODO remove setarch'
-  echo -e "\e[34mTesting SYNC\e[0m"
+  printf "%bTesting %4s %5s:%b " "\033[34m" "$cmd" sync "\033[0m"
   out=''
 
+  [ "$INMEMBIN_DEBUG" != 0 ] && echo "Test: Source"
   . "$scriptdir"/../inmembin.sh
+  [ "$INMEMBIN_DEBUG" != 0 ] && echo "Test: Execute"
   create_memfd
   pid=$$
-  
+
   get_fd_number "$pid"; fd=$?
   out=$(execute_echo_from_file "/proc/$pid/fd/$fd")
 
@@ -75,8 +82,15 @@ execute_echo_from_file(){
 
 get_fd_number(){
   for fd_number in 5 4 3; do
-    echo toto > /proc/"$1"/fd/"$fd_number" 2> /dev/null && return "$fd_number"
+    exec 9>&2
+    exec 2> /dev/null
+    proc_fd=$(readlink -f /proc/"$1"/fd/"$fd_number")
+    case $proc_fd in /memfd*) return "$fd_number";; esac
+    exec 2>&9
+    exec 9>&-
   done
+  printf "%b" "\033[31mError: cannot find file descriptor\033[0m"
+  exit 1
 }
 
 
@@ -86,12 +100,12 @@ equal(){
   '
   msg=''
   if [ "$1" = "$2" ]; then
-    msg="\e[32mSUCCESS: $3""\e[0m: (got '$1')"
+    msg="\033[32mSUCCESS: $3""\033[0m: (got '$1')"
   else
     exit_status=1
-    msg="\e[31mERROR  : $3\e[0m: (expected '$1' and got '$2')"
+    msg="\033[31mERROR  : $3\033[0m: (expected '$1' and got '$2')"
   fi
-  echo -e "$msg"
+  printf "%b\n" "$msg"
 }
 
 

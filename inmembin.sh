@@ -1,4 +1,6 @@
 #!/bin/sh
+# shellcheck disable=SC2059  # Don't use variables in the p...t string
+
 : 'Open next available FD with a memfd
 -- Used to execute binary in memory (without touching HD)
 
@@ -6,12 +8,12 @@ Ex: bash ./inmembin.sh & sleep 0.3; cp $(command which echo) /proc/$!/fd/4; /pro
 '
 
 # Global architecture
-ARCH=$(uname -m)  # x86_64 or aarch64
-SOURCED=0
-: "{DEBUG:=1}"
+: "${INMEMBIN_ARCH:=$(uname -m)}"  # x86_64 or aarch64
+: "${INMEMBIN_SOURCED:=0}"
+: "${INMEMBIN_DEBUG:=1}"
 
 # Clause: leave if CPU not supported
-case $ARCH in x86_64|aarch64):;; *)
+case $INMEMBIN_ARCH in x86_64|aarch64):;; *)
   echo "DDexec: Error, this architecture is not supported." >&2
   exit 1;;
 esac
@@ -31,17 +33,19 @@ create_memfd(){
   jumper_addr_hex_endian_page="0000${jumper_addr_hex_endian#????}"  # Protect 16 pages !
   jumper_addr_dec="$(hex2dec "0x$jumper_addr_hex")"
   
-  # Craft shellcode and jumper
-  shellcode_hex="$(craft_shellcode)"
+  # Craft jumper
   jumper_hex="$(craft_jumper "$shellcode_addr_dec")"
 
   # Backup
-  [ "$DEBUG" != 0 ] && >&2 echo Read1
   shellcode_save_hex=$(read_mem "$shellcode_addr_dec" $(( ${#shellcode_hex} / 2 )))
-  #[ "$DEBUG" != 0 ] && >&2 echo Read2
-  #jumper_save_hex=$(read_mem "$jumper_addr" $(( ${#jumper_hex} / 2 )))
+  #[ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo Read2
+  jumper_save_hex=$(read_mem "$jumper_addr_dec" $(( ${#jumper_hex} / 2 )))
+  # Expects: 483d00f0ffff7756c30f1f44
 
-  [ "$DEBUG" != 0 ] && >&2 echo "InMemBin:
+  # Craft shellcode
+  shellcode_hex="$(craft_shellcode "$jumper_addr_dec" "$jumper_save_hex")"
+
+  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin:
     shellcode_addr_hex=$shellcode_addr_hex
     shellcode_hex=$shellcode_hex
     shellcode_save_hex=$shellcode_save_hex
@@ -50,28 +54,34 @@ create_memfd(){
     jumper_addr_endian_____=$jumper_addr_hex_endian
     jumper_addr_endian_page=$jumper_addr_hex_endian_page
     jumper_hex=$jumper_hex
-    jumper_save_hex=$jumper_hex
+    jumper_save_hex=$jumper_save_hex
   "
 
   # Overwrite vDSO with our shellcode
-  [ "$DEBUG" != 0 ] && >&2 echo Write1
   write_mem "$shellcode_addr_dec" "$shellcode_hex"
 
   # Write jump instruction where it will be found shortly
-  [ "$DEBUG" != 0 ] && >&2 echo Write2
   write_mem "$jumper_addr_dec" "$jumper_hex"
   # -- Wait: Fd still not created at this point
 
-  [ "$DEBUG" != 0 ] && >&2 echo "Write3: sourced=$SOURCED"
-  #if [ "$SOURCED" = 0 ] && [ bash != "${SHELL##*/}" ]; then
-  #if [ "$SOURCED" = 0 ] && [ bash != "${SHELL}" ]; then
+  # Trigger
+  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin: Trigger"
+  read -r syscall_info < /proc/self/syscall
+  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 ls -l /proc/$$/fd
+
+  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin: Write3: sourced=$INMEMBIN_SOURCED"
+  #if [ "$INMEMBIN_SOURCED" = 0 ] && [ bash != "${SHELL##*/}" ]; then
+  #if [ "$INMEMBIN_SOURCED" = 0 ] && [ bash != "${SHELL}" ]; then
     # I do not know why bash freeze on this line
-    write_mem "$shellcode_addr_dec" "$shellcode_save_hex"
-    ls -l /proc/$$/fd
+  if [ -z "$KSH_VERSION" ]; then
+    # This destroys the FD with ksh93
+    : #write_mem "$shellcode_addr_dec" "$shellcode_save_hex"
+  fi
+  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 ls -l /proc/$$/fd
   # -- OK: Fd still not created
   #fi
 
-  [ "$DEBUG" != 0 ] && >&2 echo "InMemBin: Function is back"
+  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin: Function is back"
 }
 
 
@@ -96,7 +106,13 @@ write_mem(){
 craft_shellcode(){
   : 'Craft hex shellcode with: dup2(2, 0); memfd_create;'
   out=''
-  case $ARCH in
+  # Divide in 3 dw
+  save_rest="$jumper_save_hex"
+  tail="${save_rest#????????}"; save_dw1="${save_rest%"$tail"}"; save_rest=$tail
+  tail="${save_rest#????????}"; save_dw2="${save_rest%"$tail"}"; save_rest=$tail
+  tail="${save_rest#????????}"; save_dw3="${save_rest%"$tail"}"; save_rest=$tail
+
+  case $INMEMBIN_ARCH in
     x86_64)
       out=4831c04889c6b0024889c7b0210f05  # dup
       ## ORIGIN
@@ -108,7 +124,8 @@ craft_shellcode(){
       # memprotect + mov + jump back
       #out="${out}b80a00000048bf0040d1f7ff7f0000ba07000000be0c0000000f0549bf9249d1f7ff7f000041c707483d00f041c74704ffff775641c74708c30f1f4441ffe7"
       #out="${out}b80a00000048bfcacacacacacacacaba07000000be0c0000000f0549bfcbcbcbcbcbcbcbcb41c707483d00f041c74704ffff775641c74708c30f1f4441ffe7"
-      out="${out}b80a00000048bf${jumper_addr_hex_endian_page}ba07000000be000001000f0549bf${jumper_addr_hex_endian}41c707483d00f041c74704ffff775641c74708c30f1f4441ffe7"
+      out="${out}b80a00000048bf${jumper_addr_hex_endian_page}ba07000000be000001000f0549bf${jumper_addr_hex_endian}"
+      out="${out}41c707${save_dw1}41c74704${save_dw2}41c74708${save_dw3}41ffe7"
       ;;
     aarch64)
       out=080380d2400080d2010080d2010000d4
@@ -123,7 +140,7 @@ craft_jumper(){
   -- Trampoline to jump to the shellcode
   '
   out="$(printf %016x "$1")"
-  case $ARCH in
+  case $INMEMBIN_ARCH in
     x86_64) out="48b8$(endian "$out")ffe0";;
     aarch64) out="4000005800001fd6$(endian "$out")";;
   esac
@@ -169,7 +186,6 @@ unhexify(){
     escaped="$escaped\\$(printf "%o" 0x"${rest%"$tail"}")"
     rest="$tail"
   done
-  # shellcheck disable=SC2059  # Don't use variables in the p...t string
   printf "$escaped"
 }
 
@@ -188,15 +204,12 @@ seek(){
 
 # Is script sourced?  # From: https://stackoverflow.com/a/28776166/2544873
 if [ -n "$ZSH_VERSION" ]; then
-  case $ZSH_EVAL_CONTEXT in *:file) SOURCED=1;; esac
-elif [ -n "$KSH_VERSION" ]; then
-  # shellcheck disable=SC2296  # Parameter expansions can't start with ..
-  [ "$(basename -- "$0")" = ksh ] && SOURCED=1
+  case $ZSH_EVAL_CONTEXT in *:file) INMEMBIN_SOURCED=1;; esac
 elif [ -n "$BASH_VERSION" ]; then
-  (return 0 2>/dev/null) && SOURCED=1
+  (return 0 2>/dev/null) && INMEMBIN_SOURCED=1
 else # All other shells: examine $0 for known shell binary filenames.
-  # Detects `sh` and `dash`; add additional shell filenames as needed.
-  case ${0##*/} in sh|-sh|ash|-ash|dash|-dash) SOURCED=1;; esac
+  # Detects sh and dash and ksh; add additional shell filenames as needed.
+  case ${0##*/} in sh|-sh|ash|-ash|dash|-dash|ksh|-ksh|ksh93|test_inmembin.sh|inmembin) INMEMBIN_SOURCED=1;; esac
 fi
 
-[ "$SOURCED" = 0 ] && { create_memfd; tail -f /dev/null; }
+[ "$INMEMBIN_SOURCED" = 0 ] && { create_memfd; tail -f /dev/null; }

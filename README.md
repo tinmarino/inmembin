@@ -53,6 +53,22 @@ Ksh (mksh) do not support 64 bit arithmetic and hardly support unsigned integer 
 
 ### readmem
 
+```bash
+setarch x86_64 -R bash -c "read -r syscall_info < /proc/self/syscall; echo \"$syscall_info\""0
+0x0  0x55a7df932260 0x1000 0x2ca893f4 0x0 0xffffffff 0x7fff7835dbe8 0x7fb390914992
+```
+
+| N   | def             | Reg | comment |
+| --- | ---             | --- | --- |
+| 1   | sycall number   | rax | 0 => read |
+| 2   | arg1            | rdi | address to read |
+| 3   | arg2            | rsi | size to read |
+| 4   | arg3            | rdx |   |
+| 5   | arg4            | r10 |   |
+| 6   | arg5            | r8  |   |
+| 7   | arg6            | r9  |   |
+| 8   | stack pointer   | rsp |   |
+| 9   | program counter | rip | Target |
 
 ### seek
 
@@ -238,7 +254,14 @@ Jumper addr: page, hex, dec
 
 # TODO
 
-* [ ] Remove the hardcoded setarch
+* [X] Remove the hardcoded setarch
+* [ ] Compatible with Alpine (the linker has other instruction)
+* [ ] Get the ARM compliant version of core
+* [ ] Create a memory maps to put arguments
+* [ ] Get the return value of syscall in shell
+* [ ] Implement some syscalls
+* [ ] Refactor with core and syscall list
+* [ ] Doc: Improve doc with other files
 
 # Credit
 
