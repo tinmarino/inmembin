@@ -200,4 +200,4 @@ else # All other shells: examine $0 for known shell binary filenames.
   case ${0##*/} in sh|-sh|dash|-dash) SOURCED=1;; esac
 fi
 
-[ "$SOURCED" = 0 ] && create_memfd
+[ "$SOURCED" = 0 ] && { create_memfd; tail -f /dev/null; }

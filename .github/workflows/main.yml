@@ -61,15 +61,18 @@ jobs:
               apk update
               apk add which bash
               apk add coreutils
+              apk add xxd
               [ -n "$apt" ] && apk add "$apt"
               [ mksh = "$apt" ] && ln -s /bin/mksh /bin/ksh
               ;;
             debian)
               apt-get update
+              apt-get install -y xxd
               [ -n "$apt" ] && apt-get install -y "$apt"
               ;;
             archlinux)
               pacman -Sy --noconfirm which
+              pacman -Sy --noconfirm xxd
               [ -n "$apt" ] && pacman -Sy --noconfirm "$apt"
               [ dash = "$apt" ] && ln -s /bin/dash /bin/ash
               ;;

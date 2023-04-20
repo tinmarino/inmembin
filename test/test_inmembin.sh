@@ -25,6 +25,7 @@ esac
 
 main_test(){
   test_sync
+  test_async
   return "$exit_status"
 }
 
@@ -34,14 +35,14 @@ test_async(){
   sleep 2
   
   if ! is_alpine; then
-    cp -f "$(command which echo)" /proc/"$pid"/fd/4
-    out=$(/proc/"$pid"/fd/4 -e arg1 arg2)
+    cp -f "$(command which echo)" /proc/"$pid"/fd/5
+    out=$(/proc/"$pid"/fd/5 -e arg1 arg2)
   else
-    cat "$(command which coreutils)" > /proc/"$pid"/fd/4    # Fill it with a binary
-    out=$(/proc/"$pid"/fd/4 --coreutils-prog=echo -e arg1 arg2)
+    cat "$(command which coreutils)" > /proc/"$pid"/fd/5    # Fill it with a binary
+    out=$(/proc/"$pid"/fd/5 --coreutils-prog=echo -e arg1 arg2)
   fi
   
-  equal "arg1 arg2" "$out" "ddsc_min.sh should work with $cmd"
+  equal "arg1 arg2" "$out" "shell=$cmd,mode=async: executing script should create the fd"
 }
 
 test_sync(){
@@ -51,17 +52,19 @@ test_sync(){
   . "$scriptdir"/../inmembin.sh
   create_memfd
   pid=$$
-  sleep 0.1
+  read -r syscall_info < /proc/self/syscall
+  sleep 0.3
+  ls -l /proc/$pid/fd
   
   if ! is_alpine; then
-    cp -f "$(command which echo)" /proc/"$pid"/fd/5
-    out=$(/proc/"$pid"/fd/5 -e arg1 arg2)
+    cp -f "$(command which echo)" /proc/"$pid"/fd/3
+    out=$(/proc/"$pid"/fd/3 -e arg1 arg2)
   else
-    cat "$(command which coreutils)" > /proc/"$pid"/fd/5    # Fill it with a binary
-    out=$(/proc/"$pid"/fd/5 --coreutils-prog=echo -e arg1 arg2)
+    cat "$(command which coreutils)" > /proc/"$pid"/fd/3    # Fill it with a binary
+    out=$(/proc/"$pid"/fd/3 --coreutils-prog=echo -e arg1 arg2)
   fi
   
-  equal "arg1 arg2" "$out" "ddsc_min.sh should work with $cmd"
+  equal "arg1 arg2" "$out" "shell=$cmd,mode=sync: executign function should fill current shell"
 }
 
 equal(){

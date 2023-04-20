@@ -17,4 +17,5 @@ jobs:
           fetch-depth: 0
 
       - uses: crate-ci/typos@v1.13.16
-        config: test/typos_config.toml
+        with:
+          config: test/typos_config.toml
