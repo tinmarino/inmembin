@@ -19,35 +19,37 @@ create_memfd(){
   : 'Main function: no argument, no return!'
   # Craft the shellcode to be written into the vDSO
   shellcode_hex="$(craft_shellcode)"
-  shellcode_addr="$(get_section_start_addr '[vdso]')"
+  shellcode_addr_hex="$(get_section_start_addr '[vdso]')"
+  shellcode_addr_dec="$(hex2dec "0x$shellcode_addr_hex")"
 
   # Craft the jumper to be written to a syscall ret PC
-  jumper_hex="$(craft_jumper "$shellcode_addr")"
-  jumper_addr="$(get_read_syscall_ret_addr)"
+  jumper_hex="$(craft_jumper "$shellcode_addr_dec")"
+  jumper_addr_hex="$(get_read_syscall_ret_addr)"
+  jumper_addr_dec="$(hex2dec "0x$jumper_addr_hex")"
   
   # Backup
   [ "$DEBUG" != 0 ] && >&2 echo Read1
-  shellcode_save_hex=$(read_mem "$shellcode_addr" $(( ${#shellcode_hex} / 2 )))
+  shellcode_save_hex=$(read_mem "$shellcode_addr_dec" $(( ${#shellcode_hex} / 2 )))
   #[ "$DEBUG" != 0 ] && >&2 echo Read2
   #jumper_save_hex=$(read_mem "$jumper_addr" $(( ${#jumper_hex} / 2 )))
 
   [ "$DEBUG" != 0 ] && >&2 echo "InMemBin:
-    shellcode_addr=$shellcode_addr
+    shellcode_addr=$shellcode_addr_hex
     shellcode_hex=$shellcode_hex
     shellcode_save_hex=$shellcode_save_hex
 
-    jumper_addr=$jumper_addr
+    jumper_addr=$jumper_addr_hex
     jumper_hex=$jumper_hex
     jumper_save_hex=$jumper_hex
   "
 
   # Overwrite vDSO with our shellcode
   [ "$DEBUG" != 0 ] && >&2 echo Write1
-  write_mem "$shellcode_addr" "$shellcode_hex"
+  write_mem "$shellcode_addr_dec" "$shellcode_hex"
 
   # Write jump instruction where it will be found shortly
   [ "$DEBUG" != 0 ] && >&2 echo Write2
-  write_mem "$jumper_addr" "$jumper_hex"
+  write_mem "$jumper_addr_dec" "$jumper_hex"
 
   [ "$DEBUG" != 0 ] && >&2 echo Write3
   #write_mem "$shellcode_addr" "$shellcode_save_hex"
@@ -57,11 +59,6 @@ create_memfd(){
   #write_mem "$jumper_addr" "$jumper_save_hex"
 
   [ "$DEBUG" != 0 ] && >&2 echo "InMemBin: Function is back"
-}
-
-test(){
-  create_memfd
-  write_mem "$shellcode_addr" "$shellcode_save_hex"
 }
 
 
@@ -122,10 +119,10 @@ craft_jumper(){
 get_section_start_addr(){
   : 'Print offset of start of section with string (arg1)'
   out=""
-  while read -r line; do case $line in *"$1"*)
-    out=$(printf "%s" "$line" | cut -d- -f1); break
-  esac; done < /proc/$$/maps
-  hex2dec "0x$out"
+  while read -r line; do
+    case $line in *"$1"*) out=$(printf "%s" "$line" | cut -d- -f1); break; esac
+  done < /proc/$$/maps
+  printf "%s" "$out"
 }
 
 
@@ -133,16 +130,17 @@ get_read_syscall_ret_addr(){
   : 'Print decimal addr where a next syscall will return, to put jumper, as trigger'
   read -r syscall_info < /proc/self/syscall
   out="$(printf "%s" "$syscall_info" | cut -d' ' -f9)"
-  hex2dec "$out"
+  printf "%s" "${out##??}"  # Remove the 0x prefix
 }
 
 
 endian(){
   : 'Change endianness of hex string (arg1)'
-  i=0 out=''
-  while [ "$i" -lt "${#1}" ]; do
-    out="$(printf "%s" "$1" | cut -c$(( i+1 ))-$(( i+2 )))$out"
-    i=$((i+2))
+  out='' rest="$1"
+  while [ -n "$rest" ]; do
+    tail="${rest#??}"
+    out="${rest%"$tail"}$out"
+    rest="$tail"
   done
   printf "%s" "$out"
 }
@@ -150,11 +148,10 @@ endian(){
 
 unhexify(){
   : 'Convert hex string (arg1) to binary stream (stdout): see README'
-  escaped=''
-  rest="$1"    # The loop will consume the variable, so make a temp copy first
+  escaped='' rest="$1"
   while [ -n "$rest" ]; do
-    tail="${rest#??}"  # All but the 2 first characters of the string
-    escaped="$escaped\\$(printf "%o" "$(( 0x"${rest%"$tail"}" ))")"   # Remove $rest, and you're left with the 2 first character
+    tail="${rest#??}"
+    escaped="$escaped\\$(printf "%o" "$(( 0x"${rest%"$tail"}" ))")"
     rest="$tail"
   done
   # shellcheck disable=SC2059  # Don't use variables in the p...t string
@@ -176,7 +173,7 @@ seek(){
 
 # Run if executed (not sourced), warning filename hardcode
 case ${0##*/} in
-  bash|zsh|dash|ash|ksh|mksh|sh) :;;
+  bash|zsh|dash|ash|ksh|mksh|sh|test_inmembin.sh) :;;
   *) create_memfd;;
 esac
 [ "$DEBUG" != 0 ] && >&2 echo "InMemBin: Over"

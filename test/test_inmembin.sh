@@ -45,6 +45,8 @@ test_async(){
 
 test_sync(){
   : 'Implemented, TODO remove setarch'
+  out=''
+
   source "$scriptdir"/../inmembin.sh
   create_memfd
   pid=$$

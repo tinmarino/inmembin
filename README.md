@@ -202,12 +202,31 @@ syscall             ;1d:   0f 05
 ```
 
 ### 5/ [mprotect](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_10)
+Page size is 4096
 
 ```c
 int mprotect(void *addr, size_t len, int prot);  // sig 0xa
 ```
 
-Page size is 4096
+```nasm
+; Can write to mem
+mov rax, 0xa  ; mprotect
+mov rdi, 0x7ffff7d14000  ; start addr
+mov rdx, 0x7  ; R=1 W=2 X=4
+mov rsi, 12  ; jumper len
+syscall
+```
+
+
+### 6/ copy back content at jumper
+
+```nasm
+mov r15, 0x7ffff7d14992        ; jmp addr
+mov [r15], dword 0xf0003d48    ; 4
+mov [r15+4], dword 0x5677ffff  ; 8
+mov [r15+8], dword 0x441f0fc3  ; 12
+jmp r15
+```
 
 
 # Temporary Dump
