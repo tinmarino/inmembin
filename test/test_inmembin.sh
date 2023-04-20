@@ -51,15 +51,11 @@ test_sync(){
   . "$scriptdir"/../inmembin.sh
   create_memfd
   pid=$$
-  echo "Sync: will send read syscall"
-  read -r syscall_info < /proc/self/syscall
-  sleep 0.1
-  ls -l /proc/$pid/fd
   
   get_fd_number "$pid"; fd=$?
   out=$(execute_echo_from_file "/proc/$pid/fd/$fd")
 
-  equal "arg1 arg2" "$out" "shell=$cmd,mode=sync: executign function should fill current shell (fd=$fd,pid=$pid)"
+  equal "arg1 arg2" "$out" "shell=$cmd,mode=sync: executing function should fill current shell (fd=$fd,pid=$pid)"
 }
 
 
