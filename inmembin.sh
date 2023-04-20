@@ -7,6 +7,7 @@ Ex: bash ./inmembin.sh & sleep 0.3; cp $(command which echo) /proc/$!/fd/4; /pro
 
 # Global architecture
 ARCH=$(uname -m)  # x86_64 or aarch64
+SOURCED=0
 : "{DEBUG:=1}"
 
 # Clause: leave if CPU not supported
@@ -61,7 +62,10 @@ create_memfd(){
   write_mem "$jumper_addr_dec" "$jumper_hex"
 
   [ "$DEBUG" != 0 ] && >&2 echo Write3
-  write_mem "$shellcode_addr_dec" "$shellcode_save_hex"
+  if [ "$SOURCED" = 0 ] && [ bash != "$SHELL" ]; then
+    # I do not know why bash freeze on this line
+    write_mem "$shellcode_addr_dec" "$shellcode_save_hex"
+  fi
 
   # Done by shellcode
   [ "$DEBUG" != 0 ] && >&2 echo Write4
@@ -163,7 +167,7 @@ unhexify(){
   escaped='' rest="$1"
   while [ -n "$rest" ]; do
     tail="${rest#??}"
-    escaped="$escaped\\$(printf "%o" "$(( 0x"${rest%"$tail"}" ))")"
+    escaped="$escaped\\$(printf "%o" 0x"${rest%"$tail"}")"
     rest="$tail"
   done
   # shellcheck disable=SC2059  # Don't use variables in the p...t string
@@ -183,9 +187,17 @@ seek(){
 }
 
 
-# Run if executed (not sourced), warning filename hardcode
-case ${0##*/} in
-  bash|zsh|dash|ash|ksh|mksh|sh|test_inmembin.sh) :;;
-  *) create_memfd;;
-esac
-[ "$DEBUG" != 0 ] && >&2 echo "InMemBin: Over"
+# Is script sourced?  # From: https://stackoverflow.com/a/28776166/2544873
+if [ -n "$ZSH_VERSION" ]; then
+  case $ZSH_EVAL_CONTEXT in *:file) SOURCED=1;; esac
+elif [ -n "$KSH_VERSION" ]; then
+  # shellcheck disable=SC2296  # Parameter expansions can't start with ..
+  [ "$(cd -- "$(dirname -- "$0")" && pwd -P)/$(basename -- "$0")" != "$(cd -- "$(dirname -- "${.sh.file}")" && pwd -P)/$(basename -- "${.sh.file}")" ] && SOURCED=1
+elif [ -n "$BASH_VERSION" ]; then
+  (return 0 2>/dev/null) && SOURCED=1
+else # All other shells: examine $0 for known shell binary filenames.
+  # Detects `sh` and `dash`; add additional shell filenames as needed.
+  case ${0##*/} in sh|-sh|dash|-dash) SOURCED=1;; esac
+fi
+
+[ "$SOURCED" = 0 ] && create_memfd

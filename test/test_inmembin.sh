@@ -44,7 +44,7 @@ test_async(){
 }
 
 test_sync(){
-  : 'Implemented, TODO remove setarch'
+  : 'Implementing, TODO remove setarch'
   out=''
 
   . "$scriptdir"/../inmembin.sh
