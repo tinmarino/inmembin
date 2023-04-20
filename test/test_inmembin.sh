@@ -51,6 +51,7 @@ test_sync(){
   . "$scriptdir"/../inmembin.sh
   create_memfd
   pid=$$
+  sleep 0.1
   
   if ! is_alpine; then
     cp -f "$(command which echo)" /proc/"$pid"/fd/5
