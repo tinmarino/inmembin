@@ -12,11 +12,14 @@ tail -c +$(($1 + 1)) >/dev/null 2>&1
 jumper_addr=$(($(echo "$syscall_info" | cut -d' ' -f9)))
 '
 
-: "${INMEMBIN_DEBUG:=1}"
+# Include
+scriptdir=$(dirname "$(readlink -f "$0")")
+. "$scriptdir/lib_test.sh"
+
 
 # Global
+: "${INMEMBIN_DEBUG:=1}"
 exit_status=0
-scriptdir=$(dirname "$(readlink -f "$0")")
 cmd=$(head -n1 /proc/$$/cmdline | cut -d "" -f1)  # Get shell, not sure why alpine is adding a newline between arguments
 cmd=${cmd##*/}
 
@@ -29,9 +32,17 @@ esac
 
 
 main_test(){
+  case "$*" in *--unit*) test_unit;; esac
   case "$*" in *--async*) test_async;; esac
   case "$*" in *--sync*) test_sync;; esac
   return "$exit_status"
+}
+
+
+test_unit(){
+  printf "%bTesting %4s %5s:%b " "\033[34m" "$cmd" unit "\033[0m"
+  "$cmd" "$scriptdir/test_unit.sh";
+  : $(( exit_status |= $? ))
 }
 
 
@@ -65,55 +76,5 @@ test_sync(){
   equal "arg1 arg2" "$out" "shell=$cmd,mode=sync: executing function should fill current shell (fd=$fd,pid=$pid)"
 }
 
-
-execute_echo_from_file(){
-  echo_from_pid=""
-
-  if ! is_alpine; then
-    cp -f "$(command which echo)" "$1"
-    echo_from_pid=$("$1" -e arg1 arg2)
-  else
-    cat "$(command which coreutils)" > "$1"    # Fill it with a binary
-    echo_from_pid=$("$1" --coreutils-prog=echo -e arg1 arg2)
-  fi
-  printf "%s" "$echo_from_pid"
-}
-
-
-get_fd_number(){
-  for fd_number in 5 4 3; do
-    exec 9>&2
-    exec 2> /dev/null
-    proc_fd=$(readlink -f /proc/"$1"/fd/"$fd_number")
-    case $proc_fd in /memfd*) return "$fd_number";; esac
-    exec 2>&9
-    exec 9>&-
-  done
-  printf "%b" "\033[31mError: cannot find file descriptor\033[0m"
-  exit 1
-}
-
-
-equal(){
-  : 'Helper function
-    Ex: equal 0 0 "yes it works"
-  '
-  msg=''
-  if [ "$1" = "$2" ]; then
-    msg="\033[32mSUCCESS: $3""\033[0m: (got '$1')"
-  else
-    exit_status=1
-    msg="\033[31mERROR  : $3\033[0m: (expected '$1' and got '$2')"
-  fi
-  printf "%b\n" "$msg"
-}
-
-
-is_alpine(){
-  : 'Alpine is so small, all commands are busybox'
-  [ -f /etc/os-release ] || return 1
-  [ alpine = "$(sed -n '/^ID=/s/ID=//p' /etc/os-release)" ] && return 0
-  return 1
-}
 
 main_test "$@" || exit "$exit_status"

@@ -14,17 +14,19 @@ colorize(){
   esac
 }
 
-declare -a a_shell=(Shell ---) a_sync=(Sync ---) a_async=(Async ---)
+declare -a a_shell=(Shell ---) a_unit=(Unit ---) a_sync=(Sync ---) a_async=(Async ---)
 
 for shell in bash zsh ash ksh sh; do
   a_shell+=("$shell")
+  test_shell_mode "$shell" --unit; a_unit+=($?)
   test_shell_mode "$shell" --sync; a_sync+=($?)
   test_shell_mode "$shell" --async; a_async+=($?)
 done
 
 for ((i=0; i < ${#a_shell[@]}; i++)); do
   c1=$(colorize "${a_shell[$i]}")
-  c2=$(colorize "${a_sync[$i]}")
-  c3=$(colorize "${a_async[$i]}")
-  printf '| %-14s | %-13s | %-14s |\n' "$c1" "$c2" "$c3"
+  c2=$(colorize "${a_unit[$i]}")
+  c3=$(colorize "${a_sync[$i]}")
+  c4=$(colorize "${a_async[$i]}")
+  printf '| %-14s | %-13s | %-13s | %-14s |\n' "$c1" "$c2" "$c3" "$c4"
 done

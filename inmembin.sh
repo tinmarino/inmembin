@@ -21,7 +21,7 @@ create_memfd(){
   : 'Main function: no argument, no return!'
   # Craft the shellcode to be written into the vDSO
   shellcode_addr_hex="$(get_section_start_addr '[vdso]')"
-  shellcode_addr_dec="$(hex2dec "0x$shellcode_addr_hex")"
+  shellcode_addr_dec="$(hex2dec "$shellcode_addr_hex")"
 
   # Craft the jumper to be written to a syscall ret PC
   jumper_addr_hex="$(get_read_syscall_ret_addr)"
@@ -30,7 +30,7 @@ create_memfd(){
   done
   jumper_addr_hex_endian="$(endian "$jumper_addr_hex")"
   jumper_addr_hex_endian_page="0000${jumper_addr_hex_endian#????}"  # Protect 16 pages !
-  jumper_addr_dec="$(hex2dec "0x$jumper_addr_hex")"
+  jumper_addr_dec="$(hex2dec "$jumper_addr_hex")"
   
   # Craft jumper
   jumper_hex="$(craft_jumper "$shellcode_addr_dec")"
@@ -73,19 +73,11 @@ create_memfd(){
   if [ -n "$KSH_VERSION" ] || [ "$INMEMBIN_SOURCED" = 0 ]; then
     read -r syscall_info < /proc/self/syscall
   fi
-  #[ "$INMEMBIN_DEBUG" != 0 ] && >&2 ls -l /proc/$$/fd
 
-  #[ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin: Write3: sourced=$INMEMBIN_SOURCED"
-  #if [ "$INMEMBIN_SOURCED" = 0 ] && [ bash != "${SHELL##*/}" ]; then
-  #if [ "$INMEMBIN_SOURCED" = 0 ] && [ bash != "${SHELL}" ]; then
-    # I do not know why bash freeze on this line
   if [ -z "$KSH_VERSION" ]; then
     # This destroys the FD with ksh93
     write_mem "$shellcode_addr_dec" "$shellcode_save_hex"
   fi
-  #[ "$INMEMBIN_DEBUG" != 0 ] && >&2 ls -l /proc/$$/fd
-  # -- OK: Fd still not created
-  #fi
 
   [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin: Function is back"
 }
@@ -96,7 +88,7 @@ read_mem(){
     TODO: Implementing... bash only
   '
   exec 3< /proc/self/mem
-  xxd -s "$1" -l "$2"  -c 100000 -p <&3
+  dd bs=1 skip="$1" count="$2" <&3 2> /dev/null | hexify "$2" 2> /dev/null
   exec 3<&-
 }
 
@@ -207,15 +199,30 @@ unhexify(){
 }
 
 
+
+hexify(){
+  : 'Convert (arg1) bytes (stdin) to ascii hex (stdout) [WARNING: slow]'
+  byte_counter=0
+  while [ "$byte_counter" -lt "$1" ]; do
+    # read one byte, using a work around for the fact that command
+    # substitution strips the last character.
+    c=$(dd bs=1 count=1 2> /dev/null; echo .)
+    c=${c%.} 2> /dev/null
+    printf "%02x" "'$c"
+    : $((byte_counter+=1))
+  done
+}
+
+
 hex2dec(){
   : 'Convert hex number to decimal number'
-  printf "%d" "$1"
+  printf "%d" 0x"$1"
 }
 
 
 seek(){
   : 'Seek offset (arg1) on stdin => just to offset the FD'
-  dd bs=1 skip="$1" > /dev/null 2>&1
+  dd bs=1 skip="$1" count=0 > /dev/null 2>&1
 }
 
 

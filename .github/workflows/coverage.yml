@@ -1,5 +1,6 @@
 ---
-# Shell check my scripts
+# See the coverage of a bash sync test
+# yamllint disable rule:line-length
 
 name: Coverage
 
@@ -18,7 +19,7 @@ jobs:
         run: sudo apt-get install -y bash kcov
 
       - name: Cover
-        run: kcov coverage test/test_inmembin.sh
+        run: kcov --include-path=inmembin.sh coverage test/test_inmembin.sh -- --sync
 
       - name: Upload coverage (Codecov)
         env:

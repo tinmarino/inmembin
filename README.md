@@ -2,20 +2,33 @@
 
 | Shell | Debian | Archlinux | Alpine |
 | ---   | ---    | ---       | --- |
-| __bash__  | [![Bash on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_debian_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Bash on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_debian_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Bash on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_archlinux_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Bash on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_archlinux_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Bash on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_alpine_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Bash on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_alpine_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) |
-| __zsh__  | [![Zsh on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_debian_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Zsh on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_debian_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Zsh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_archlinux_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Zsh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_archlinux_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Zsh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_alpine_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Zsh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_alpine_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) |
-| __ash__  | [![Ash on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_debian_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Ash on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_debian_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Ash on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_archlinux_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Ash on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_archlinux_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Ash on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_alpine_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Ash on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_alpine_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) |
-| __ksh__  | [![Ash on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_debian_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Ash on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_debian_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Ksh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_archlinux_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Ksh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_archlinux_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Ksh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_alpine_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Ksh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_alpine_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) |
-| __sh__  | [![Ash on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_debian_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Ash on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_debian_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Sh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_archlinux_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Sh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_archlinux_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Sh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_alpine_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Sh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_alpine_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) |
+| __bash__  | [![Bash on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_debian_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Bash on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_debian_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Bash on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_debian_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Bash on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_archlinux_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Bash on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_archlinux_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Bash on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_archlinux_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Bash on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_alpine_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Bash on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_alpine_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Bash on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_bash_on_alpine_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) |
+| __zsh__  | [![Zsh on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_debian_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Zsh on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_debian_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Zsh on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_debian_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Zsh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_archlinux_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Zsh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_archlinux_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Zsh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_archlinux_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Zsh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_alpine_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Zsh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_alpine_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Zsh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_zsh_on_alpine_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) |
+| __ash__  | [![Ash on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_debian_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Ash on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_debian_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Ash on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_debian_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Ash on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_archlinux_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Ash on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_archlinux_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Ash on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_archlinux_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Ash on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_alpine_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Ash on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_alpine_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Ash on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ash_on_alpine_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) |
+| __ksh__  | [![Ksh on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_debian_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Ksh on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_debian_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Ksh on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_debian_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Ksh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_archlinux_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Ksh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_archlinux_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Ksh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_archlinux_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Ksh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_alpine_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Ksh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_alpine_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Ksh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_ksh_on_alpine_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) |
+| __sh__  | [![Sh on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_debian_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Sh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_debian_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Sh on Debian](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_debian_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Sh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_archlinux_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Sh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_archlinux_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Sh on Arch](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_archlinux_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) | [![Sh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_alpine_mode_unit.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) <br/> [![Sh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_alpine_mode_sync.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) [![Sh on Alpine](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tinmarino/7b40042f91625feffeaa1941f7aba953/raw/inmembin_x86_sh_on_alpine_mode_async.json)](https://github.com/tinmarino/inmembin/actions/workflows/main.yml) |
 
 [![license](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![100% shell](https://img.shields.io/github/languages/top/tinmarino/inmembin.svg?style=flat-square)](https://github.com/shellspec/shellspec/search?l=Shell)
 [![Typos](https://github.com/tinmarino/inmembin/workflows/Typos/badge.svg)](https://github.com/tinmarino/inmembin/actions/workflows/typos.yml)
 [![Shellcheck](https://github.com/tinmarino/inmembin/workflows/Shellcheck/badge.svg)](https://github.com/tinmarino/inmembin/actions/workflows/shellcheck.yml)
-[![Codecov](https://codecov.io/github/tinmarino/inmembin/branch/main/graph/badge.svg?token=TUQU7E6KT7)](https://codecov.io/github/tinmarino/inmembin)
+[![Yamllint](https://github.com/tinmarino/inmembin/workflows/Yamllint/badge.svg)](https://github.com/tinmarino/inmembin/actions/workflows/yamllint.yml)
+[![Codecov](https://codecov.io/github/tinmarino/inmembin/branch/ci/graph/badge.svg?token=TUQU7E6KT7)](https://app.codecov.io/gh/tinmarino/inmembin/blob/ci/inmembin.sh)
 
 Execute binary code from shell without touching the filesystem. Hard copied from [arget13/ddsc.sh](https://github.com/arget13/DDexec/blob/49498ff6cc0bff4afe848565e6fe7d0558fab5f1/ddsc.sh)
+# Content
 
-# Quickstart
+|                      |   |
+| ---                  | --- |
+| [Quickstart](#quick) | get in |
+| [Feature](#feature)  | what you can expect |
+| [Shell](#shell)      | lessons learn from posix shell |
+| [Asm](#asm)          | assembly snippet used |
+| [Todo](#todo)        | what is next |
+| [Credit](#credit)    | @arget13 idea |
+| [Link](#link)        | references |
+
+# Quickstart <a name="quick"></a>
 
 ```sh
 git clone --depth=1 https://github.com/tinmarino/inmembin && cd inmembin
@@ -26,13 +39,23 @@ cp "$(command which echo)" /proc/"$pid"/fd/4    # Fill it with a binary
 /proc/"$pid"/fd/4 -e "\e[34mmy message\e[0m"    # Execute the in-mem binary
 ```
 
-# Feature
+# Feature <a name="feature"></a>
 
 Requires: dd uname cut
 
 Supports: bash zsh ash (dash) ksh (mksh) sh
 
-# Verbose shell code description
+# Verbose shell code description <a name="shell"></a>
+
+* od
+  * -t x1z: output in hex, 1 byte, with zero as tail
+  * -v: do not cheat with * instead of newline
+  * -N 10: read 10 next bytes
+  * -j 4096: seek offset 4096 
+* dd
+  * count
+  * skip
+  * bs
 
 ### main
 
@@ -55,6 +78,9 @@ Ksh (mksh) do not support 64 bit arithmetic and hardly support unsigned integer 
 ### readmem
 
 ```bash
+xxd -s "$shellcode_addr_dec" -l 100  -c 100000 -p <&3
+dd bs=1 count=100 skip=$shellcode_addr_dec <&3
+
 setarch x86_64 -R bash -c "read -r syscall_info < /proc/self/syscall; echo \"$syscall_info\""0
 0x0  0x55a7df932260 0x1000 0x2ca893f4 0x0 0xffffffff 0x7fff7835dbe8 0x7fb390914992
 ```
@@ -68,8 +94,8 @@ setarch x86_64 -R bash -c "read -r syscall_info < /proc/self/syscall; echo \"$sy
 | 5   | arg4            | r10 |   |
 | 6   | arg5            | r8  |   |
 | 7   | arg6            | r9  |   |
-| 8   | stack pointer   | rsp |   |
-| 9   | program counter | rip | Target |
+| 8   | stack pointer   | rsp | Maybe we can play here |
+| 9   | program counter | rip | Target: first instruction executed at return to userland |
 
 ### seek
 
@@ -111,20 +137,20 @@ Basic parsing of the /proc filesystem
 
 Embed hex strings of binaries, maybe with recently fetched pointers
 
-# Linux magic path
+### Linux magic path
 
 * /proc/self/mem
 * /proc/self/maps
 * /proc/self/syscalls
 
 
-# Asm
+# Asm <a name="asm"></a>
 
 
 ### 0/ debug
 
 ```nasm
-"ELF"  ; 7f454c
+".ELF"  ; 7f454c46
 int    0x3  ; 0: cd 03 => just a sheetcheat
 
 pop eax       ; 58
@@ -245,6 +271,7 @@ mov [r15+8], dword 0x441f0fc3  ; 12
 jmp r15
 ```
 
+### 7/ mmap
 
 # Temporary Dump
 
@@ -253,22 +280,26 @@ Jumper addr: page, hex, dec
 7ffff7d14992
 140737351076242
 
-# TODO
+# TODO <a name="todo"></a>
 
 * [X] Remove the hardcoded setarch
-* [ ] Compatible with Alpine (the linker has other instruction)
-* [ ] Get the ARM compliant version of core
+* [X] Compatible with Alpine (the linker has other instruction <= DONE with read_mem using xxd for now)
+* [ ] Find a way to cleanly jump after "infection"
 * [ ] Create a memory maps to put arguments
 * [ ] Get the return value of syscall in shell
+
+* [ ] Get the ARM compliant version of core
+* [ ] Doc: Improve doc with other files
 * [ ] Implement some syscalls
 * [ ] Refactor with core and syscall list
-* [ ] Doc: Improve doc with other files
 
-# Credit
+# Credit <a name="credit"></a>
 
 Copied from [arget13/ddsc.sh](https://github.com/arget13/DDexec/blob/49498ff6cc0bff4afe848565e6fe7d0558fab5f1/ddsc.sh) => see credit there
 
-# Link
+# Link <a name="link"></a>
 
-* [syscall and arguments](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md)
-* [parent project (ddexec)](https://github.com/arget13/DDexec)
+* [syscall and arguments (@google)](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md)
+* [parent project (@arget: ddexec)](https://github.com/arget13/DDexec)
+* [assembly code snippet (@Igor Zhirkov: low level programming)](https://github.com/Apress/low-level-programming)
+* [local: error number list](file:/usr/include/asm-generic/errno-base.h)

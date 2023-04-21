@@ -1,0 +1,21 @@
+---
+
+name: Yamllint
+
+# yamllint disable-line rule:truthy
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  Yamllint:
+    # Copied from: https://github.com/junegunn/fzf/blob/master/
+    # -- .github/workflows/typos.yml
+    name: Yamllint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: >-
+            .github/workflows/*.yml

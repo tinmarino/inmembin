@@ -15,7 +15,7 @@ jobs:
       matrix:
         shell: [bash, zsh, ash, ksh, sh]
         image: [debian, archlinux, alpine]  # Alpine cannot copy
-        mode: [sync, async]
+        mode: [unit, async, sync]
 
     container:
       image: ${{ matrix.image }}
