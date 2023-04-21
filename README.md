@@ -11,6 +11,7 @@
 [![license](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Typos](https://github.com/tinmarino/inmembin/workflows/Typos/badge.svg)](https://github.com/tinmarino/inmembin/actions/workflows/typos.yml)
 [![Shellcheck](https://github.com/tinmarino/inmembin/workflows/Shellcheck/badge.svg)](https://github.com/tinmarino/inmembin/actions/workflows/shellcheck.yml)
+[![Codecov](https://codecov.io/github/tinmarino/inmembin/branch/main/graph/badge.svg?token=TUQU7E6KT7)](https://codecov.io/github/tinmarino/inmembin)
 
 Execute binary code from shell without touching the filesystem. Hard copied from [arget13/ddsc.sh](https://github.com/arget13/DDexec/blob/49498ff6cc0bff4afe848565e6fe7d0558fab5f1/ddsc.sh)
 
