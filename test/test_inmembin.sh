@@ -2,15 +2,6 @@
 # shellcheck disable=SC2059  # Don't use variables in the p...t string
 # shellcheck disable=SC3037,SC1091  # In POSIX sh, echo flags are undefined | not following
 
-: '
-TODO:
-tcsh
-
-Notes:
-1/ Ksh do not support 64 bit unsigned arithmetic so those fail
-tail -c +$(($1 + 1)) >/dev/null 2>&1
-jumper_addr=$(($(echo "$syscall_info" | cut -d' ' -f9)))
-'
 
 # Include
 scriptdir=$(dirname "$(readlink -f "$0")")
@@ -18,15 +9,15 @@ scriptdir=$(dirname "$(readlink -f "$0")")
 
 
 # Global
-: "${INMEMBIN_DEBUG:=1}"
+: "${INMEMBIN_DEBUG:=1}"; export INMEMBIN_DEBUG
 exit_status=0
 cmd=$(head -n1 /proc/$$/cmdline | cut -d "" -f1)  # Get shell, not sure why alpine is adding a newline between arguments
 cmd=${cmd##*/}
 
 # Clause: check shell: call me with a known shell
-r_known_shell="bash|zsh|ash|dash|ksh|mksh|sh|ksh93"
+r_known_shell="bash|zsh|ash|dash|ksh|mksh|sh|ksh93|yash"
 case $cmd in
-  bash|zsh|ash|dash|ksh|mksh|sh|ksh93) :;;
+  bash|zsh|ash|dash|ksh|mksh|sh|ksh93|yash) :;;
   *) printf "%b\n" "\033[31mError: call me with a command in $r_known_shell (got $cmd: $(echo "$cmd"|xxd))\nTip: ash test_inmembin.sh\033[0m"; exit 1;;
 esac
 
@@ -50,7 +41,10 @@ test_async(){
   printf "%bTesting %4s %5s:%b " "\033[34m" "$cmd" async "\033[0m"
   "$cmd" "$scriptdir"/../inmembin.sh &
   pid=$!
-  sleep 2
+  sleep 1
+
+  # Debug
+  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 ls -l /proc/$$/fd
 
   get_fd_number "$pid"; fd=$?
   out=$(execute_echo_from_file "/proc/$pid/fd/$fd")
@@ -69,6 +63,9 @@ test_sync(){
   [ "$INMEMBIN_DEBUG" != 0 ] && echo "Test: Execute"
   create_memfd
   pid=$$
+
+  # Debug
+  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 ls -l /proc/$$/fd
 
   get_fd_number "$pid"; fd=$?
   out=$(execute_echo_from_file "/proc/$pid/fd/$fd")

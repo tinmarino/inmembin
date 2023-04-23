@@ -20,3 +20,14 @@ jobs:
         with:
           version: v0.9.0
           scandir: '.'
+        env:
+          SHELLCHECK_OPTS: -e SC3043 -e SC2016 -e SC2155 -e SC2059 -e SC1091
+          # SC3043 In POSIX sh, 'local' is undefined.
+          # -- I prefer a clean scope
+          # SC2016 Expressions don't expand in single quotes
+          # -- my docstrings may have $. Besides, I know what I do here
+          # SC2155 Declare and assign separately to avoid masking return values
+          # -- Prevent declare -a, local
+          # -- I prefer in one line
+          # SC2059 Don't use variables in the printf format string
+          # SC1091 (info): Not following

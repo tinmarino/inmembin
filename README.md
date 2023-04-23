@@ -18,12 +18,13 @@
 Execute binary code from shell without touching the filesystem. Hard copied from [arget13/ddsc.sh](https://github.com/arget13/DDexec/blob/49498ff6cc0bff4afe848565e6fe7d0558fab5f1/ddsc.sh)
 # Content
 
-|                      |   |
+| Chapter              | Content  |
 | ---                  | --- |
 | [Quickstart](#quick) | get in |
-| [Feature](#feature)  | what you can expect |
-| [Shell](#shell)      | lessons learn from posix shell |
-| [Asm](#asm)          | assembly snippet used |
+| [Requirement](#requirement)  | what you can expect |
+| [Memory](#mem)       | memory access primitive<br/>[read](#read) [write](#write) [seek](#seek) |
+| [Shell](#shell)      | lessons learned on posix shell<br/>[command](#command) [compat](#compat) [main](#main) [hex2dec](#hex2dec) [unhexify](#unhexify) [hexify](#hexify) [endian](#endian) [craft](#craft) |
+| [Asm](#asm)          | assembly snippet used<br/>[0/debug](#debug) [1/dup2](#dup2) [2/memfd](#memfd) [3/ftruncate](#ftruncate) [4/pause](#pause) [5/mprotect](#mprotect) [6/restore](#restore) [7/mmap](#mmap)<br/> |
 | [Todo](#todo)        | what is next |
 | [Credit](#credit)    | @arget13 idea |
 | [Link](#link)        | references |
@@ -33,49 +34,21 @@ Execute binary code from shell without touching the filesystem. Hard copied from
 ```sh
 git clone --depth=1 https://github.com/tinmarino/inmembin && cd inmembin
 
-/proc/self/exe ./inmembin.sh & pid=$!         # Create memfd
+/proc/self/exe ./inmembin.sh & pid=$!           # Create memfd
 sleep 0.3 
 cp "$(command which echo)" /proc/"$pid"/fd/4    # Fill it with a binary
 /proc/"$pid"/fd/4 -e "\e[34mmy message\e[0m"    # Execute the in-mem binary
 ```
 
-# Feature <a name="feature"></a>
+# Requirement <a name="requirement"></a>
 
-Requires: dd uname cut
+* __Command__: dd <= used to seek, read and write memory. Posix shell limitation is that is is character wise (i.e null terminated strings) and not bytewise (i.e. supporting null bytes)
+* __Shell__: bash zsh ash (dash) ksh (mksh) sh <= posix compliant tested shells
+* __File__: /proc/self/syscalls /proc/self/maps /proc/self/mem <= used to hook instruction pointer, search memory and edit memory
 
-Supports: bash zsh ash (dash) ksh (mksh) sh
+# Memory access <a name="mem"></a>
 
-# Verbose shell code description <a name="shell"></a>
-
-* od
-  * -t x1z: output in hex, 1 byte, with zero as tail
-  * -v: do not cheat with * instead of newline
-  * -N 10: read 10 next bytes
-  * -j 4096: seek offset 4096 
-* dd
-  * count
-  * skip
-  * bs
-
-### main
-
-The main routine is crafting and writing in memory
-
-1. shellcode
-2. jumper: small `jmp` instruction to jump to it.
-
-### hex2dec
-
-Using the printf method
-
-```sh
-printf "%d" 0x10  # Posix compatible
-$(( 0x10 ))  # More readable
-```
-
-Ksh (mksh) do not support 64 bit arithmetic and hardly support unsigned integer (I did not succeed). So the hex2dec: $((0x10)) used by @arget13 was replaced by printf "%d"
-
-### readmem
+### read <a name="read"></a>
 
 ```bash
 xxd -s "$shellcode_addr_dec" -l 100  -c 100000 -p <&3
@@ -97,7 +70,12 @@ setarch x86_64 -R bash -c "read -r syscall_info < /proc/self/syscall; echo \"$sy
 | 8   | stack pointer   | rsp | Maybe we can play here |
 | 9   | program counter | rip | Target: first instruction executed at return to userland |
 
-### seek
+
+### write <a name="write"></a>
+
+TODO
+
+### seek <a name="seek"></a>
 
 Using the dd method
 
@@ -114,13 +92,50 @@ Ksh is not supporting the `$(( $1 + 1 ))` arithmetic. This is unfortunate, I wou
 
 Silence error to avoid: error reading standard input: Bad file descriptor, which I do not care
 
-### endian
+# Posix shell <a name="shell"></a>
 
-String indexing is not supported in sh and ash. As shellcode are supposed to be small, just invert pair of chars by preprending each next pair (like vim `:g/.*/m0`).
+### Command cheatsheet <a name="command"></a>
 
-Initially I was appending, but anyway the `+=` operator is not supported in ash.
+* od
+  * -t x1z: output in hex, 1 byte, with zero as tail
+  * -v: do not cheat with * instead of newline
+  * -N 10: read 10 next bytes
+  * -j 4096: seek offset 4096 
+* dd
+  * count
+  * skip
+  * bs
 
-### unhexlify
+
+### Shell compatibility <a name="compat"></a>
+
+* __Bash__
+  * Limited to signed 64 bits integer arithmetic
+* __Zsh__
+* __Ash__
+* __Ksh__
+  * Limited to 32 bits integer arithmetic
+  * Uses FD 3 to pass stdout and stdout on command redirection so echo $(read_mem) is not the same as read_mem is function read_mem uses FD 3 (as originally did)
+
+### main <a name="main"></a>
+
+The main routine is crafting and writing in memory
+
+1. shellcode
+2. jumper: small `jmp` instruction to jump to it.
+
+### hex2dec <a name="hex2dec"></a>
+
+Using the printf method
+
+```sh
+printf "%d" 0x10  # Posix compatible
+$(( 0x10 ))  # More readable
+```
+
+Ksh (mksh) do not support 64 bit arithmetic and hardly support unsigned integer (I did not succeed). So the hex2dec: $((0x10)) used by @arget13 was replaced by printf "%d"
+
+### unhexify <a name="unhexify"></a>
 
 In shell, variable cannot hold null byte as strings are zero terminated. So byte streams must be send to pipes
 
@@ -129,25 +144,26 @@ printf "\\$(printf "%o" 0x41)"  # Posix compatible
 printf "\x41"  # Bash but not posix compatible
 ```
 
-### fetch addresses
+### hexify <a name="hexify"></a>
 
-Basic parsing of the /proc filesystem
+TODO
 
-### craft shellcode and jumper
+### endian <a name="hex2dec"></a>
+
+String indexing is not supported in sh and ash. As shellcode are supposed to be small, just invert pair of chars by preprending each next pair (like vim `:g/.*/m0`).
+
+Initially I was appending, but anyway the `+=` operator is not supported in ash.
+
+### craft shellcode and jumper <a name="craft"></a>
 
 Embed hex strings of binaries, maybe with recently fetched pointers
 
-### Linux magic path
-
-* /proc/self/mem
-* /proc/self/maps
-* /proc/self/syscalls
 
 
 # Asm <a name="asm"></a>
 
 
-### 0/ debug
+### 0/ debug <a name="debug"></a>
 
 ```nasm
 ".ELF"  ; 7f454c46
@@ -169,7 +185,7 @@ setarch x86_64 -R bash inmembin.sh
 ```
 
 
-### 1/ [dup2](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#arm_63)
+### 1/ [dup2](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#arm_63) <a name="dup2"></a>
 
 Arget13 is duplicating 0<-2 because his stdin was redirected from a pipe.
 
@@ -182,7 +198,7 @@ mov    al,0x21  ; b:   b0 21
 syscall         ; d:   0f 05                   
 ```
 
-### 2/ [memfd_create](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_319)
+### 2/ [memfd_create](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_319) <a name="memfd"></a>
 
 ```c
 int memfd_create(char* filename, unsigned int flags) // sig 0x164
@@ -215,7 +231,7 @@ mov    esi,0x0    ;a:   be 00 00 00 00
 syscall           ;f:   0f 05                   
 ```
 
-### 3/ [ftruncate](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_77)
+### 3/ [ftruncate](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_77) <a name="ftruncate"></a>
 Optional, seems to be for early fail
 
 ```c
@@ -229,7 +245,7 @@ mov    al,0x4d      ;17:   b0 4d
 syscall             ;19:   0f 05
 ```
 
-### 4/ [pause](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_34)
+### 4/ [pause](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_34) <a name="pause"></a>
 Wait for a signal
 
 ```c
@@ -244,7 +260,7 @@ mov    al,0x22      ;1b:   b0 22
 syscall             ;1d:   0f 05
 ```
 
-### 5/ [mprotect](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_10)
+### 5/ [mprotect](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_10) <a name="mprotect"></a>
 Page size is 4096
 
 ```c
@@ -261,7 +277,7 @@ syscall
 ```
 
 
-### 6/ copy back content at jumper
+### 6/ copy back content at jumper <a name="restore"></a>
 
 ```nasm
 mov r15, 0x7ffff7d14992        ; jmp addr
@@ -271,7 +287,9 @@ mov [r15+8], dword 0x441f0fc3  ; 12
 jmp r15
 ```
 
-### 7/ mmap
+### 7/ mmap <a name="mmap"></a>
+
+TODO Implementing for a nice extension, this should print the addr, as I do not see it in /proc/self/maps
 
 # Temporary Dump
 
@@ -303,3 +321,5 @@ Copied from [arget13/ddsc.sh](https://github.com/arget13/DDexec/blob/49498ff6cc0
 * [parent project (@arget: ddexec)](https://github.com/arget13/DDexec)
 * [assembly code snippet (@Igor Zhirkov: low level programming)](https://github.com/Apress/low-level-programming)
 * [local: error number list](file:/usr/include/asm-generic/errno-base.h)
+* [list of posix complaint shell (@archliux)](https://wiki.archlinux.org/title/command-line_shell)
+* [awesome shell list (@github)](https://github.com/alebcay/awesome-shell)

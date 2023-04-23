@@ -6,17 +6,24 @@
 # Include
 scriptdir=$(dirname "$(readlink -f "$0")")
 . "$scriptdir/lib_test.sh"
+: "${exit_status=0}"  # Silence shellcheck
 
 
 # Source inmembin.sh
 INMEMBIN_SOURCED=1 . "$scriptdir"/../inmembin.sh
 
 main_test(){
+  test_get_arch
   test_seek
   test_hex2dec
   test_hexify
   test_unhexify
   return "$exit_status"
+}
+
+
+test_get_arch(){
+  equal "$(uname -m)" "$(get_arch)" "function get_arch should return the current architecture, like uname -m, x86_64 or aarch64"
 }
 
 
@@ -52,7 +59,6 @@ test_seek(){
   out=$(cat "$tmpfile")
   ref=1234567890AAA456789
   equal "$ref" "$out" "function seek: 3: subsequent write should respect offset"
-
 }
 
 
@@ -78,15 +84,7 @@ test_hex2dec(){
 
 
 test_hexify(){
-  in=41424344
-  ref=ABCD
-  out=$(unhexify "$in")
-  equal "$ref" "$out" "function hexify: should easily care upper case ascii"
-}
-
-
-test_unhexify(){
-  in=ABDC len=4
+  in=ABCD len=4
   ref=41424344
   out=$(echo "$in" | hexify "$len")
   equal "$ref" "$out" "function unhexify: should easily care upper case ascii"
@@ -94,11 +92,20 @@ test_unhexify(){
 
 
 test_unhexify(){
+  in=41424344
+  ref=ABCD
+  out=$(unhexify "$in")
+  equal "$ref" "$out" "function hexify: should easily care upper case ascii"
+}
+
+
+test_endian(){
   in=AAABACADBABBBCBDCACBCCCD
   ref=CDCCCBCABDBCBBBAADACABAA
   out=$(endian "$in")
 
   equal "$ref" "$out" "function endian should invert these hex encoded bytes"
 }
+
 
 main_test "$@" || exit "$exit_status"
