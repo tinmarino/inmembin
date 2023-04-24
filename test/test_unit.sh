@@ -13,12 +13,28 @@ scriptdir=$(dirname "$(readlink -f "$0")")
 INMEMBIN_SOURCED=1 . "$scriptdir"/../inmembin.sh
 
 main_test(){
+  test_craft_arm_mov_imm
   test_get_arch
   test_seek
   test_hex2dec
   test_hexify
   test_unhexify
   return "$exit_status"
+}
+
+
+test_craft_arm_mov_imm(){
+  : '
+    Note: starting with low bytes: important for test but the order should not matter
+    movk     x0, #0xcdef, lsl #0
+    movk     x0, #0x89ab, lsl #16
+    movk     x0, #0x4567, lsl #32
+    movk     x0, #0x0123, lsl #48
+  '
+  in=0123456789abcdef
+  ref=e0bd99f26035b1f2e0acc8f26024e0f2
+  out=$(craft_arm_mov_imm "$in")
+  equal "$ref" "$out" "function craft_arm_mov_imm: should create the expected hex string for immediate in ($in)"
 }
 
 

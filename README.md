@@ -58,17 +58,17 @@ setarch x86_64 -R bash -c "read -r syscall_info < /proc/self/syscall; echo \"$sy
 0x0  0x55a7df932260 0x1000 0x2ca893f4 0x0 0xffffffff 0x7fff7835dbe8 0x7fb390914992
 ```
 
-| N   | def             | Reg | comment |
-| --- | ---             | --- | --- |
-| 1   | sycall number   | rax | 0 => read |
-| 2   | arg1            | rdi | address to read |
-| 3   | arg2            | rsi | size to read |
-| 4   | arg3            | rdx |   |
-| 5   | arg4            | r10 |   |
-| 6   | arg5            | r8  |   |
-| 7   | arg6            | r9  |   |
-| 8   | stack pointer   | rsp | Maybe we can play here |
-| 9   | program counter | rip | Target: first instruction executed at return to userland |
+| N   | def             | x86 | arm | comment |
+| --- | ---             | --- | --- | --- |
+| 1   | sycall number   | rax | x8  | 0 => read |
+| 2   | arg1            | rdi | x0  | address to read |
+| 3   | arg2            | rsi | x1  | size to read |
+| 4   | arg3            | rdx | x2  |   |
+| 5   | arg4            | r10 | x3  |   |
+| 6   | arg5            | r8  | x4  |   |
+| 7   | arg6            | r9  | x5  |   |
+| 8   | stack pointer   | rsp | sp  | maybe we can play here |
+| 9   | program counter | rip | pc  | target: first instruction executed at return to userland |
 
 
 ### write <a name="write"></a>
@@ -109,11 +109,15 @@ Silence error to avoid: error reading standard input: Bad file descriptor, which
 
 ### Shell compatibility <a name="compat"></a>
 
-* __Bash__
+* __Bash__: default on Linux
+  * BASH_VERSION is set
   * Limited to signed 64 bits integer arithmetic
-* __Zsh__
-* __Ash__
-* __Ksh__
+* __Zsh__: default on Mac
+  * ZSH_VERSION is set
+* __Ash__: The smallest BSD, no more feature than Posix
+  * Do not support `printf "\x41"`
+* __Ksh__: Powerfull for 1990 (pre 64 bits era)
+  * KSH_VERSION is set
   * Limited to 32 bits integer arithmetic
   * Uses FD 3 to pass stdout and stdout on command redirection so echo $(read_mem) is not the same as read_mem is function read_mem uses FD 3 (as originally did)
 
@@ -182,6 +186,27 @@ sudo xxd -s $((0x7f5a53314992)) -c 10000 -l 10000 -p /proc/$$/mem | xxd -r -p > 
 objdump -b binary -m i386:x86-64 -D -M intel tail.bin > tail.asm
 
 setarch x86_64 -R bash inmembin.sh
+
+
+# Get hex on ARM
+file=arm; aarch64-linux-gnu-as -o $file.o $file.S  && aarch64-linux-gnu-objcopy -j.text -O binary $file.o $file  && xxd -c 10000 -p $file
+```
+
+#### Craft ARM move
+
+
+```sh
+printf %x $((  (0x0123 << 5) + (1 << 31) + (1 << 30) + (1 << 28) + (1 << 25) + (1 << 23) + (0 << 22) + (0 << 4) ))
+# Reduces to
+printf %x $(( 0xf2800000 + (0x0123 << 5) + (0 << 21) ))
+```
+
+Outputs: d2802460
+
+where
+
+```asm
+mov     x0, #0x0123           // 602480d2
 ```
 
 
@@ -198,11 +223,20 @@ mov    al,0x21  ; b:   b0 21
 syscall         ; d:   0f 05                   
 ```
 
+```asm
+mov     x8, #0x18  // 080380d2
+mov     x0, #0x2   // 400080d2
+mov     x1, #0x0   // 010080d2
+svc     #0x0       // 010000d4
+```
+
+080380d2400080d2010080d2010000d4
+
 ### 2/ [memfd_create](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_319) <a name="memfd"></a>
 
 ```c
-int memfd_create(char* filename, unsigned int flags) // sig 0x164
-// Return 4 <= FD
+int memfd_create(char* filename, unsigned int flags)
+// Return 4 <= FD // sig 0x164 for x86
 ```
 
 If filename is NULL => Segmentation fault (I think this is subobtimal impl from Linux kernel as the name is useless)
@@ -210,7 +244,6 @@ If filename is NULL => Segmentation fault (I think this is subobtimal impl from 
 
 Original: (20 bytes, including 8 to set filename string)
 
-68444541444889e74831f64889f0b401b03f0f054889c7b04d0f05b0220f05
 
 ```nasm
 push   0x44414544   ; 0:   68 44 45 41 44 => "DEAD"
@@ -222,6 +255,8 @@ mov    al,0x3f      ;10:   b0 3f
 syscall             ;12:   0f 05
 ```
 
+68444541444889e74831f64889f0b401b03f0f054889c7b04d0f05b0220f05
+
 Naive: For comparison, here is my naive intent (17 bytes but crash)
 
 ```nasm
@@ -230,6 +265,18 @@ mov    edi,0x0    ;5:   bf 00 00 00 00
 mov    esi,0x0    ;a:   be 00 00 00 00          
 syscall           ;f:   0f 05                   
 ```
+
+```asm
+mov     x0, #0x4144           // 802888d2
+movk    x0, #0x4445, lsl #16  // a088a8f2
+str     x0, [sp, #-16]        // e00f1ff8
+mov     x0, sp                // e0030091
+eor     x1, x1, x1            // 210001ca
+mov     x8, #0x117            // e82280d2
+svc     #0x0                  // 010000d4
+```
+
+802888d2a088a8f2e00f1ff8e0030091210001cae82280d2010000d4
 
 ### 3/ [ftruncate](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#x86_64_77) <a name="ftruncate"></a>
 Optional, seems to be for early fail
@@ -264,7 +311,8 @@ syscall             ;1d:   0f 05
 Page size is 4096
 
 ```c
-int mprotect(void *addr, size_t len, int prot);  // sig 0xa
+int mprotect(void *addr, size_t len, int prot);
+// sig x86: 0xa, sig arm: 0xe2
 ```
 
 ```nasm
@@ -272,10 +320,19 @@ int mprotect(void *addr, size_t len, int prot);  // sig 0xa
 mov rax, 0xa  ; mprotect
 mov rdi, 0x7ffff7d14000  ; start addr
 mov rdx, 0x7  ; R=1 W=2 X=4
-mov rsi, 12  ; jumper len
+mov rsi, 0x10000  ; jumper len
 syscall
 ```
 
+```asm
+mov     x2, #0x3              // 620081d2: RW
+mov     x1, #0x10000          // 2100a0d2: 16 pages
+// Place holder to mov jumper immediate to x0
+mov     x8, #0xe2             // 481c80d2: mprotect
+svc     #0x0                  // 010000d4: syscall
+```
+
+481c80d2405999d24059b9f24059d9f24059f9f2e10080d2820180d2010000d4
 
 ### 6/ copy back content at jumper <a name="restore"></a>
 
@@ -321,5 +378,8 @@ Copied from [arget13/ddsc.sh](https://github.com/arget13/DDexec/blob/49498ff6cc0
 * [parent project (@arget: ddexec)](https://github.com/arget13/DDexec)
 * [assembly code snippet (@Igor Zhirkov: low level programming)](https://github.com/Apress/low-level-programming)
 * [local: error number list](file:/usr/include/asm-generic/errno-base.h)
+* [local: memory protection list](file:/usr/include/asm-generic/mman-common.h)
 * [list of posix complaint shell (@archliux)](https://wiki.archlinux.org/title/command-line_shell)
 * [awesome shell list (@github)](https://github.com/alebcay/awesome-shell)
+* [posix shell specification](https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/V3_chap02.html#tag_18_12)
+* [arm instruction set](https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions)

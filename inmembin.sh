@@ -11,10 +11,11 @@ get_arch(){
      read -r INMEMBIN_ARCH < /proc/sys/kernel/arch  # Not working before 2022
    '
   while IFS=: read -r cpuinfo_key cpuinfo_value; do
-    case $cpuinfo_key in flags*)
+    case $cpuinfo_key in flags*|Features*)
         case $cpuinfo_value in
           *" lm "*|*lm$) printf %s x86_64;;
-          *" lpae "*|*lpae$) printf %s aarch64;;
+          *" lpae "*|*lpae$|*" fp "*|*fp$) printf %s aarch64;;
+          *) printf %s unknown;;
         esac
     break;; esac
   done < /proc/cpuinfo
@@ -34,16 +35,17 @@ esac
 create_memfd(){
   : 'Main function: no argument, no return!'
   # Craft the shellcode to be written into the vDSO
-  shellcode_addr_hex="$(get_section_start_addr '[vdso]')"
-  shellcode_addr_dec="$(hex2dec "$shellcode_addr_hex")"
+  shellcode_addr_hex=$(get_section_start_addr '[vdso]')
+  shellcode_addr_dec=$(hex2dec "$shellcode_addr_hex")
 
   # Craft the jumper to be written to a syscall ret PC
-  jumper_addr_hex="$(get_read_syscall_ret_addr)"
+  jumper_addr_hex=$(get_read_syscall_ret_addr)
   while [ ${#jumper_addr_hex} -lt 16 ]; do
     jumper_addr_hex="0$jumper_addr_hex"
   done
-  jumper_addr_hex_endian="$(endian "$jumper_addr_hex")"
+  jumper_addr_hex_endian=$(endian "$jumper_addr_hex")
   jumper_addr_hex_endian_page="0000${jumper_addr_hex_endian#????}"  # Protect 16 pages !
+  jumper_addr_hex_page=$(endian "$jumper_addr_hex_endian_page")
   jumper_addr_dec="$(hex2dec "$jumper_addr_hex")"
   
   # Craft jumper
@@ -84,7 +86,7 @@ create_memfd(){
   # Trigger
   [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin: Trigger"
   if [ -n "$KSH_VERSION" ]; then
-    :#read -r _syscall_info < /proc/self/syscall
+    read -r _syscall_info < /proc/self/syscall
   fi
 
   if [ -z "$KSH_VERSION" ]; then
@@ -100,10 +102,7 @@ read_mem(){
   : 'Read mem at pos (arg1) with size (arg2)
     TODO: Implementing... bash only
   '
-  >&2 echo "Tin: PID: $$"
-  >&2 ls -l /proc/$$/fd
   exec 6< /proc/self/mem
-  >&2 ls -l /proc/$$/fd
   dd bs=1 skip="$1" count="$2" <&6 2> /dev/null | hexify "$2" 2> /dev/null
   exec 6<&-
 }
@@ -141,31 +140,61 @@ craft_shellcode(){
 
   case $INMEMBIN_ARCH in
     x86_64)
-      out_sc=4831c04889c6b0024889c7b0210f05  # dup
-      ## ORIGIN
-      #out_sc="${out_sc}68444541444889e74831f64889f0b401b03f0f054889c7b04d0f05b0220f05";;  # memfd
+      # Dup fd
+      out_sc=4831c04889c6b0024889c7b0210f05
 
-      # suscall memfd 0x164
-      #out_sc="${out_sc}cd03"  # Debug
+      # Debug break
+      # out_sc="${out_sc}cd03"  # Debug
+
+      # syscall memfd 0x164
       out_sc="${out_sc}68444541444889e74831f64889f0b401b03f0f054889c7b04d"
-      out_sc="${out_sc}5831c0"  # pop eax, xor eax, eax
-      # memprotect + mov + jump back
-      #out_sc="${out_sc}b80a00000048bf0040d1f7ff7f0000ba07000000be0c0000000f0549bf9249d1f7ff7f000041c707483d00f041c74704ffff775641c74708c30f1f4441ffe7"
-      #out_sc="${out_sc}b80a00000048bfcacacacacacacacaba07000000be0c0000000f0549bfcbcbcbcbcbcbcbcb41c707483d00f041c74704ffff775641c74708c30f1f4441ffe7"
+      # pop eax, xor eax, eax
+      out_sc="${out_sc}5831c0"
+
       # mov 15, jumper addr
       out_sc="${out_sc}49bf${jumper_addr_hex_endian}"
       # memprotect RW
       out_sc="${out_sc}b80a00000048bf${jumper_addr_hex_endian_page}ba03000000be000001000f05"
-      # 
+      # write jumper saved
       out_sc="${out_sc}41c707${save_dw1}41c74704${save_dw2}41c74708${save_dw3}"
       # memprotect RX
       out_sc="${out_sc}b80a00000048bf${jumper_addr_hex_endian_page}ba05000000be000001000f05"
-      # Jump r15
+      # jump r15
       out_sc="${out_sc}41ffe7"
       ;;
     aarch64)
-      out_sc=080380d2400080d2010080d2010000d4
-      out_sc="${out_sc}802888d2a088a8f2e00f1ff8e0030091210001cae82280d2010000d4c80580d2010000d4881580d2010000d4610280d2281080d2010000d4";;
+      out_sc="${out_sc}080380d2400080d2010080d2010000d4"
+
+      # Break
+      out_sc="${out_sc}fedeffe7"
+
+      # syscall memfd
+      out_sc="${out_sc}802888d2a088a8f2e00f1ff8e0030091210001cae82280d2010000d4"
+
+      # mov x15, jumper addr, osea mov x15, x0 = ef0300aa
+      out_sc="${out_sc}$( craft_arm_mov_imm "$jumper_addr_hex" )ef0300aa"
+      # memprotect RW => 3, note: mov x0, x15 = e0030faa
+      out_sc="${out_sc}2100a0d2620080d2$( craft_arm_mov_imm "$jumper_addr_hex_page" )481c80d2010000d4"
+      # write jumper saved
+      # -- Fortunately is size is 31 bits = 2 x 16
+      jmp_rest=$jumper_save_hex
+      while [ -n "$jmp_rest" ]; do
+         jmp_tail="${jmp_rest#????????????????}"; jmp_cur=${jmp_rest%"$jmp_tail"}; jmp_rest="$jmp_tail"
+         out_sc="${out_sc}$( craft_arm_mov_imm "$(endian "$jmp_cur")" )"
+         out_sc="${out_sc}e00100f9"  # str x0, [x15]
+         out_sc="${out_sc}ef410091"  # add, x15, x15, #16
+      done
+
+      #out_sc="${out_sc}41c707${save_dw1}41c74704${save_dw2}41c74708${save_dw3}"
+      # memprotect RX => 5
+      out_sc="${out_sc}2100a0d2a20080d2$( craft_arm_mov_imm "$jumper_addr_hex_page" )481c80d2010000d4"
+      # mov x15, jumper addr, osea mov x15, x0 = ef0300aa
+      out_sc="${out_sc}$( craft_arm_mov_imm "$jumper_addr_hex" )ef0300aa"
+      # jump: br x15
+      out_sc="${out_sc}e0011fd6"
+      # Ftruncate and pause
+      #out_sc="${out_sc}c80580d2010000d4881580d2010000d4610280d2281080d2010000d4"
+      ;;
   esac
   printf "%s" "$out_sc"
 }
@@ -181,6 +210,27 @@ craft_jumper(){
     aarch64) out_jp="4000005800001fd6$(endian "$out_jp")";;
   esac
   printf "%s" "$out_jp"
+}
+
+
+craft_arm_mov_imm(){
+  : 'Craft hex code for arm mov 64 bit immediate
+    ins1=$((  (0x"$w1" << 5) + (1 << 31) + (1 << 30) + (1 << 28) + (1 << 25) + (1 << 23) + (0 << 22) + (0 << 4) ))
+  '
+  imm_rest=$(printf %016x 0x"$1")
+
+  # Split in words
+  imm_tail="${imm_rest#????}"; w1=${imm_rest%"$imm_tail"}; imm_rest="$imm_tail"
+  imm_tail="${imm_rest#????}"; w2=${imm_rest%"$imm_tail"}; imm_rest="$imm_tail"
+  imm_tail="${imm_rest#????}"; w3=${imm_rest%"$imm_tail"}; imm_rest="$imm_tail"
+  imm_tail="${imm_rest#????}"; w4=${imm_rest%"$imm_tail"}; imm_rest="$imm_tail"
+
+  imm_shift=0
+  for imm_word in "$w4" "$w3" "$w2" "$w1"; do
+    #>&2 echo "Tin $imm_word!"
+    endian "$(printf %x $(( 0xf2800000 + (0x$imm_word << 5) + (imm_shift << 21) )))"
+    : $(( imm_shift += 1 ))
+  done
 }
 
 
