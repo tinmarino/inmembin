@@ -1,0 +1,68 @@
+---
+# yamllint disable rule:line-length
+
+name: "CI: arm"
+
+# yamllint disable-line rule:truthy
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  main:
+    name: "${{matrix.cpu}}: ${{ matrix.shell }} on ${{ matrix.image }} mode ${{ matrix.mode }}"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [bash, zsh, ash, ksh, sh]
+        image: [debian, archlinux, alpine]
+        mode: [unit]
+        cpu: [arm]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Run on arch container
+        id: run-on-arm
+        timeout-minutes: 4
+        uses: uraimo/run-on-arch-action@v2.5.0
+        with:
+          arch: aarch64
+          distro: ${{ matrix.image == 'alpine' && 'alpine_latest' || matrix.image == 'archlinux' && 'archarm_latest' || 'bullseye' }}
+          dockerRunArgs: |
+            --volume /home/runner/work/_temp:/home/runner/work/_temp
+          run: |
+            . ./test/install.sh
+            install_main "${{ matrix.image }}" "${{ matrix.shell }}"
+            "${{ matrix.shell }}" test/test_inmembin.sh "--${{ matrix.mode }}" "--${{ matrix.shell }}"
+            ret=$?
+            if [ 0 = "$ret" ]; then
+              export GITHUB_ENV_MSG=O
+              export GITHUB_ENV_COLOR="#34d058"
+            fi
+            echo "GITHUB_ENV_MSG=$GITHUB_ENV_MSG" >> "$GITHUB_ENV"
+            echo "GITHUB_ENV_COLOR=$GITHUB_ENV_COLOR" >> "$GITHUB_ENV"
+
+      - name: Retrieve GITHUB_ENV
+        if: always()
+        run: |
+          MSG=${{ env.GITHUB_ENV_MSG }}
+          : "${MSG:=X}"
+          echo "MSG=$MSG" >> "$GITHUB_ENV"
+
+          COLOR=${{ env.GITHUB_ENV_COLOR }}
+          : "${COLOR:=#ea4a5a}"
+          echo "COLOR=$COLOR" >> "$GITHUB_ENV"
+
+      - name: Create Awesome Badge
+        if: always()
+        uses: schneegans/dynamic-badges-action@v1.6.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: 7b40042f91625feffeaa1941f7aba953
+          filename: inmembin_${{ matrix.cpu }}_${{ matrix.shell }}_on_${{ matrix.image }}_mode_${{ matrix.mode }}.json
+          label: "${{ matrix.cpu }} ${{ matrix.mode }}"
+          message: ${{ env.MSG }}
+          color: ${{ env.COLOR }}
