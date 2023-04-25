@@ -120,6 +120,7 @@ Silence error to avoid: error reading standard input: Bad file descriptor, which
   * KSH_VERSION is set
   * Limited to 32 bits integer arithmetic
   * Uses FD 3 to pass stdout and stdout on command redirection so echo $(read_mem) is not the same as read_mem is function read_mem uses FD 3 (as originally did)
+  * For example `printf %08x $(( 0xffffffff ))` returns ffffffffffffffff, because 0xffffffff expands to -1
 
 ### main <a name="main"></a>
 
@@ -336,6 +337,8 @@ svc     #0x0                  // 010000d4: syscall
 
 ### 6/ copy back content at jumper <a name="restore"></a>
 
+For x86, it is straight forward:
+
 ```nasm
 mov r15, 0x7ffff7d14992        ; jmp addr
 mov [r15], dword 0xf0003d48    ; 4
@@ -343,6 +346,8 @@ mov [r15+4], dword 0x5677ffff  ; 8
 mov [r15+8], dword 0x441f0fc3  ; 12
 jmp r15
 ```
+
+But for arm, on my Android, things get much more complicated, as I cannot mprotect. I tried to by pass this problem by hooking the return value in the stack instead of the syscall, but after hours looking around, I found no obvious way to ensure bash will come back at this stack (keep increasing).
 
 ### 7/ mmap <a name="mmap"></a>
 
@@ -356,6 +361,8 @@ Jumper addr: page, hex, dec
 140737351076242
 
 # TODO <a name="todo"></a>
+
+* [ ] Investigate the stack hooking, remembers that the stack goes down when calling, so look values up to hook return
 
 * [X] Remove the hardcoded setarch
 * [X] Compatible with Alpine (the linker has other instruction <= DONE with read_mem using xxd for now)

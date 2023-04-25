@@ -55,3 +55,11 @@ is_alpine(){
   [ alpine = "$(sed -n '/^ID=/s/ID=//p' /etc/os-release)" ] && return 0
   return 1
 }
+
+
+try_set_ps4(){
+  [ -z "$GITHUB_ACTION" ] && return 1
+  [ -n "$PS4" ] && [ "$PS4" != "+ " ] && return 1
+  set -x
+  PS4="$(printf %b "\033[34m")Running: \$(date +\"%F %T\"):$(printf %b "\033[0m") "
+}

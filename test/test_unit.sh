@@ -2,6 +2,11 @@
 
 : 'Unit tests for inmembin.sh functions'
 
+# Include
+scriptdir=$(dirname "$(readlink -f "$0")"); . "$scriptdir/lib_test.sh"
+
+# Set PS4
+try_set_ps4
 
 # Include
 scriptdir=$(dirname "$(readlink -f "$0")")
@@ -13,6 +18,7 @@ scriptdir=$(dirname "$(readlink -f "$0")")
 INMEMBIN_SOURCED=1 . "$scriptdir"/../inmembin.sh
 
 main_test(){
+  test_unknown_arch
   test_craft_arm_mov_imm
   #test_get_arch  # Not working with qemu
   test_seek
@@ -20,6 +26,21 @@ main_test(){
   test_hexify
   test_unhexify
   return "$exit_status"
+}
+
+
+test_unknown_arch(){
+  out=$(mktemp -t -p /tmp)
+  err=$(mktemp -t -p /tmp)
+  INMEMBIN_ARCH=grepme INMEMBIN_SOURCED=1 "$scriptdir"/../inmembin.sh > "$out" 2> "$err"
+  ret=$?
+  equal 0 $(( ! ret )) "script inmembin.sh must fail if cpu in env is unknown"
+  equal "" "$(cat "$out")"  "script inmembin.sh must not print to stdout even if cpu in env is unknown"
+  case $(cat "$err") in
+    *grepme*) grepme=grepme;;
+    *) grepme=did-not-grep-me;;
+  esac
+  equal "grepme" "$grepme" "script inmembin.sh must print to stderr if cpu in env is unknown"
 }
 
 

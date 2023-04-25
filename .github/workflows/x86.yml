@@ -34,8 +34,9 @@ jobs:
 
       - name: Run
         shell: bash
-        timeout-minutes: 4
+        timeout-minutes: 10
         run: |
+          set -x; PS4="$(printf %b "\033[34m")Running: \D{%F %T}:$(printf %b "\033[0m") "
           "${{ matrix.shell }}" test/test_inmembin.sh "--${{ matrix.mode }}" "--${{ matrix.shell }}"
           ret=$?
           if [ 0 = "$ret" ]; then
@@ -43,8 +44,8 @@ jobs:
             export GITHUB_ENV_COLOR="#34d058"
           fi
           # Export Github_env
-          echo "MSG=$GITHUB_ENV_MSG" >> "$GITHUB_ENV"
-          echo "COLOR=$GITHUB_ENV_COLOR" >> "$GITHUB_ENV"
+          echo "GITHUB_ENV_MSG=$GITHUB_ENV_MSG" >> "$GITHUB_ENV"
+          echo "GITHUB_ENV_COLOR=$GITHUB_ENV_COLOR" >> "$GITHUB_ENV"
 
       - name: Retrieve GITHUB_ENV
         if: always()

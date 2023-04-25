@@ -2,14 +2,14 @@
 
 : 'Open next available FD with a memfd
 -- Used to execute binary in memory (without touching HD)
-
-Ex: bash ./inmembin.sh & sleep 0.3; cp $(command which echo) /proc/$!/fd/4; /proc/$!/fd/4 toto
+--
+-- Ex: bash ./inmembin.sh & sleep 0.3; cp $(command which echo) /proc/$!/fd/4; /proc/$!/fd/4 toto
 '
 
 get_arch(){
-   : 'Print Cpu architecture: x86_64 or aarch64.
-     read -r INMEMBIN_ARCH < /proc/sys/kernel/arch  # Not working before 2022
-   '
+  : 'Print Cpu architecture: x86_64 or aarch64.
+    -- read -r INMEMBIN_ARCH < /proc/sys/kernel/arch  # Not working before 2022
+  '
   while IFS=: read -r cpuinfo_key cpuinfo_value; do
     case $cpuinfo_key in flags*|Features*)
         case $cpuinfo_value in
@@ -62,16 +62,17 @@ create_memfd(){
   # Expects: 483d00f0ffff7756c30f1f44
 
   [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "InMemBin:
-    pid=$$
-    shellcode_addr_hex=$shellcode_addr_hex
-    shellcode_hex=$shellcode_hex
-    shellcode_save_hex=$shellcode_save_hex
+    --pid=$$
 
-    jumper_addr____________=$jumper_addr_hex
-    jumper_addr_endian_____=$jumper_addr_hex_endian
-    jumper_addr_endian_page=$jumper_addr_hex_endian_page
-    jumper_hex=$jumper_hex
-    jumper_save_hex=$jumper_save_hex
+    --shellcode_addr_hex=$shellcode_addr_hex
+    --shellcode_hex=$shellcode_hex
+    --shellcode_save_hex=$shellcode_save_hex
+
+    --jumper_addr____________=$jumper_addr_hex
+    --jumper_addr_endian_____=$jumper_addr_hex_endian
+    --jumper_addr_endian_page=$jumper_addr_hex_endian_page
+    --jumper_hex=$jumper_hex
+    --jumper_save_hex=$jumper_save_hex
   "
 
   # Overwrite vDSO with our shellcode
@@ -100,7 +101,7 @@ create_memfd(){
 
 read_mem(){
   : 'Read mem at pos (arg1) with size (arg2)
-    TODO: Implementing... bash only
+    -- TODO: Implementing... bash only
   '
   exec 6< /proc/self/mem
   dd bs=1 skip="$1" count="$2" <&6 2> /dev/null | hexify "$2" 2> /dev/null
@@ -109,7 +110,7 @@ read_mem(){
 
 
 write_mem(){
-  : 'Write meme at pos (arg1) content (arg2)'
+  : 'Write memory at pos (arg1) content (arg2)'
   exec 6> /proc/self/mem
   seek "$1" <&6
   unhexify "$2" >&6
@@ -126,40 +127,40 @@ seek(){
 craft_shellcode(){
   : 'Craft hex shellcode with: dup2(2, 0); memfd_create;'
   out_sc=''
-  # Divide in 3 dw
-  save_rest="$jumper_save_hex"
-  tail="${save_rest#????????}"; save_dw1="${save_rest%"$tail"}"; save_rest=$tail
-  tail="${save_rest#????????}"; save_dw2="${save_rest%"$tail"}"; save_rest=$tail
-  tail="${save_rest#????????}"; save_dw3="${save_rest%"$tail"}"; save_rest=$tail
-
-  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 echo "
-    save_dw1=$save_dw1
-    save_dw2=$save_dw2
-    save_dw3=$save_dw3
-  "
-
   case $INMEMBIN_ARCH in
     x86_64)
-      # Dup fd
-      out_sc=4831c04889c6b0024889c7b0210f05
+      # Divide in 3 dw
+      save_rest="$jumper_save_hex"
+      tail="${save_rest#????????}"; save_dw1="${save_rest%"$tail"}"; save_rest=$tail
+      tail="${save_rest#????????}"; save_dw2="${save_rest%"$tail"}"; save_rest=$tail
+      tail="${save_rest#????????}"; save_dw3="${save_rest%"$tail"}"; save_rest=$tail
 
-      # Debug break
-      # out_sc="${out_sc}cd03"  # Debug
+      out_sc=''
+      # Debug
+      #out_sc="${out_sc}cd03"
 
-      # syscall memfd 0x164
+      # Pre
+      # -- Dup fd
+      out_sc="${out_sc}4831c04889c6b0024889c7b0210f05"
+      # -- mov 15, jumper addr
+      out_sc="${out_sc}49bf${jumper_addr_hex_endian}"
+      # -- memprotect RW
+      out_sc="${out_sc}b80a00000048bf${jumper_addr_hex_endian_page}ba03000000be000001000f05"
+      # -- write jumper saved
+      out_sc="${out_sc}41c707${save_dw1}41c74704${save_dw2}41c74708${save_dw3}"
+      # -- memprotect RX
+      out_sc="${out_sc}b80a00000048bf${jumper_addr_hex_endian_page}ba05000000be000001000f05"
+
+      # In
+      # -- syscall memfd 0x164
       out_sc="${out_sc}68444541444889e74831f64889f0b401b03f0f054889c7b04d"
-      # pop eax, xor eax, eax
+      # -- pop eax, xor eax, eax <= did a push for the syscall
       out_sc="${out_sc}5831c0"
 
-      # mov 15, jumper addr
+      # Post
+      # -- mov 15, jumper addr
       out_sc="${out_sc}49bf${jumper_addr_hex_endian}"
-      # memprotect RW
-      out_sc="${out_sc}b80a00000048bf${jumper_addr_hex_endian_page}ba03000000be000001000f05"
-      # write jumper saved
-      out_sc="${out_sc}41c707${save_dw1}41c74704${save_dw2}41c74708${save_dw3}"
-      # memprotect RX
-      out_sc="${out_sc}b80a00000048bf${jumper_addr_hex_endian_page}ba05000000be000001000f05"
-      # jump r15
+      # -- jump r15
       out_sc="${out_sc}41ffe7"
       ;;
     aarch64)
@@ -202,7 +203,7 @@ craft_shellcode(){
 
 craft_jumper(){
   : 'Craft hex code to jump to (arg1) hex address
-  -- Trampoline to jump to the shellcode
+    -- Trampoline to jump to the shellcode
   '
   out_jp="$(printf %016x "$1")"
   case $INMEMBIN_ARCH in
@@ -215,20 +216,22 @@ craft_jumper(){
 
 craft_arm_mov_imm(){
   : 'Craft hex code for arm mov 64 bit immediate
-    ins1=$((  (0x"$w1" << 5) + (1 << 31) + (1 << 30) + (1 << 28) + (1 << 25) + (1 << 23) + (0 << 22) + (0 << 4) ))
+    -- ins1=$((  (0x"$w1" << 5) + (1 << 31) + (1 << 30) + (1 << 28) + (1 << 25) + (1 << 23) + (0 << 22) + (0 << 4) ))
   '
   imm_rest=$(printf %016x 0x"$1")
 
   # Split in words
-  imm_tail="${imm_rest#????}"; w1=${imm_rest%"$imm_tail"}; imm_rest="$imm_tail"
-  imm_tail="${imm_rest#????}"; w2=${imm_rest%"$imm_tail"}; imm_rest="$imm_tail"
-  imm_tail="${imm_rest#????}"; w3=${imm_rest%"$imm_tail"}; imm_rest="$imm_tail"
-  imm_tail="${imm_rest#????}"; w4=${imm_rest%"$imm_tail"}; imm_rest="$imm_tail"
+  imm_tail=${imm_rest#????}; w1=${imm_rest%"$imm_tail"}; imm_rest=$imm_tail
+  imm_tail=${imm_rest#????}; w2=${imm_rest%"$imm_tail"}; imm_rest=$imm_tail
+  imm_tail=${imm_rest#????}; w3=${imm_rest%"$imm_tail"}; imm_rest=$imm_tail
+  imm_tail=${imm_rest#????}; w4=${imm_rest%"$imm_tail"}; imm_rest=$imm_tail
 
   imm_shift=0
   for imm_word in "$w4" "$w3" "$w2" "$w1"; do
-    #>&2 echo "Tin $imm_word!"
-    endian "$(printf %x $(( 0xf2800000 + (0x$imm_word << 5) + (imm_shift << 21) )))"
+    inst=$(printf %08x $(( 0xf2800000 + (0x$imm_word << 5) + (imm_shift << 21) )))
+    # Ksh may prefix with 8 f as its arith expansion returns signed
+    [ "${#inst}" -gt 8 ] && inst=${inst#????????}
+    endian "$inst"
     : $(( imm_shift += 1 ))
   done
 }
@@ -295,14 +298,28 @@ hex2dec(){
 }
 
 
-# Is script sourced?  # From: https://stackoverflow.com/a/28776166/2544873
-if [ -n "$ZSH_VERSION" ]; then
-  case $ZSH_EVAL_CONTEXT in *:file) INMEMBIN_SOURCED=1;; esac
-elif [ -n "$BASH_VERSION" ]; then
-  (return 0 2>/dev/null) && INMEMBIN_SOURCED=1
-else # All other shells: examine $0 for known shell binary filenames.
-  # Detects sh and dash and ksh; add additional shell filenames as needed.
-  case ${0##*/} in sh|-sh|ash|-ash|dash|-dash|ksh|-ksh|ksh93|yash|test_inmembin.sh) INMEMBIN_SOURCED=1;; esac
-fi
+is_sourced(){
+  : 'Is script sourced?  # From: https://stackoverflow.com/a/28776166/2544873'
+  [ -z "$INMEMBIN_SOURCED" ] && [ "$INMEMBIN_SOURCED" -ne 0 ] && return "$INMEMBIN_SOURCED"
 
-[ "$INMEMBIN_SOURCED" = 0 ] && { create_memfd; tail -f /dev/null; }
+  if [ -n "$ZSH_VERSION" ]; then
+    case $ZSH_EVAL_CONTEXT in *:file) INMEMBIN_SOURCED=1;; esac
+  elif [ -n "$BASH_VERSION" ]; then
+    # shellcheck disable=SC3028,SC3054  # In POSIX sh, BASH_SOURCE, array reference also undefined
+    [ "${BASH_SOURCE[0]}" != "$0" ] && INMEMBIN_SOURCED=1
+  elif [ -n "$KSH_VERSION" ]; then
+    # shellcheck disable=SC2296  # Parameter expansions can't start with .
+    case $KSH_VERSION in
+      *AJM*) [ "$(cd -- "$(dirname -- "$0")" && pwd -P)/$(basename -- "$0")" != "$(cd -- "$(dirname -- "${.sh.file}")" && pwd -P)/$(basename -- "${.sh.file}")" ] && INMEMBIN_SOURCED=1;;  # ksh83
+      *) case ${0##*/} in ksh|mksh) INMEMBIN_SOURCED=1; esac;;  # mksh, including *MIRBSD*|*"PD KSH"*)
+    esac
+  else # All other shells: examine $0 for known shell binary filenames.
+    # Detects sh and dash and ksh; add additional shell filenames as needed.
+    case ${0##*/} in sh|-sh|ash|-ash|dash|-dash|yash|test_inmembin.sh) INMEMBIN_SOURCED=1;; esac
+  fi
+  return $(( ! INMEMBIN_SOURCED ))
+}
+
+
+# __main__
+is_sourced || { create_memfd; tail -f /dev/null; }

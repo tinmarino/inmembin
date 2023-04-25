@@ -2,11 +2,11 @@
 # shellcheck disable=SC2059  # Don't use variables in the p...t string
 # shellcheck disable=SC3037,SC1091  # In POSIX sh, echo flags are undefined | not following
 
-
 # Include
-scriptdir=$(dirname "$(readlink -f "$0")")
-. "$scriptdir/lib_test.sh"
+scriptdir=$(dirname "$(readlink -f "$0")"); . "$scriptdir/lib_test.sh"
 
+# Set PS4
+try_set_ps4
 
 # Global
 : "${INMEMBIN_DEBUG:=1}"; export INMEMBIN_DEBUG

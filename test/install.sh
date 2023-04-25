@@ -1,6 +1,10 @@
 #!/bin/sh
 # Arg1: image
 # Arg2: shell
+# No include, I will be copied
+
+set -x
+PS4="$(printf %b "\033[34m")Running: \$(date +\"%F %T\"):$(printf %b "\033[0m") "
 
 
 install_main(){
@@ -50,6 +54,8 @@ install_main(){
       [ -n "$apt" ] && apt-get install -y "$apt"
       ;;
     archlinux)
+      pacman -Syyu --noconfirm
+      # pacman -Sy --noconfirm openssl-1.1 # Bug, because pacman friends need it
       pacman -Sy --noconfirm which
       pacman -Sy --noconfirm xxd
       [ -n "$apt" ] && pacman -Sy --noconfirm "$apt"

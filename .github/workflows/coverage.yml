@@ -19,7 +19,15 @@ jobs:
         run: sudo apt-get install -y bash kcov
 
       - name: Cover
-        run: kcov --include-path=inmembin.sh coverage test/test_inmembin.sh -- --sync
+        run: |
+          opts=(
+            --include-path=inmembin.sh
+            --exclude-line=": ',--,  \",done"
+          )
+          kcov  coverage1 "${opts[@]}" test/test_inmembin.sh --unit
+          kcov  coverage2 "${opts[@]}" test/test_inmembin.sh --sync
+          kcov --merge "${opts[@]}" coverage coverage1 coverage2
+          rm -r coverage1 coverage2
 
       - name: Upload coverage (Codecov)
         env:

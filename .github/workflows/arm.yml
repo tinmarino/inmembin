@@ -24,18 +24,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+
+      - name: Read install file
+        id: read-test-file
+        run: |
+          echo "install<<EOF_INSTALL" >> "$GITHUB_OUTPUT"
+          cat ./test/install.sh >> "$GITHUB_OUTPUT"
+          echo "EOF_INSTALL" >> "$GITHUB_OUTPUT"
+
+
       - name: Run on arch container
         id: run-on-arm
-        timeout-minutes: 4
+        timeout-minutes: 20
         uses: uraimo/run-on-arch-action@v2.5.0
         with:
           arch: aarch64
+
           distro: ${{ matrix.image == 'alpine' && 'alpine_latest' || matrix.image == 'archlinux' && 'archarm_latest' || 'bullseye' }}
+
+          # To write to GITHUB_ENV
           dockerRunArgs: |
             --volume /home/runner/work/_temp:/home/runner/work/_temp
-          run: |
-            . ./test/install.sh
+
+          install: |
+            ${{ steps.read-test-file.outputs.install }}
             install_main "${{ matrix.image }}" "${{ matrix.shell }}"
+
+          run: |
+            set -x; PS4="$(printf %b "\033[34m")Running: \D{%F %T}:$(printf %b "\033[0m") "
             "${{ matrix.shell }}" test/test_inmembin.sh "--${{ matrix.mode }}" "--${{ matrix.shell }}"
             ret=$?
             if [ 0 = "$ret" ]; then
@@ -44,6 +60,7 @@ jobs:
             fi
             echo "GITHUB_ENV_MSG=$GITHUB_ENV_MSG" >> "$GITHUB_ENV"
             echo "GITHUB_ENV_COLOR=$GITHUB_ENV_COLOR" >> "$GITHUB_ENV"
+
 
       - name: Retrieve GITHUB_ENV
         if: always()
@@ -55,6 +72,7 @@ jobs:
           COLOR=${{ env.GITHUB_ENV_COLOR }}
           : "${COLOR:=#ea4a5a}"
           echo "COLOR=$COLOR" >> "$GITHUB_ENV"
+
 
       - name: Create Awesome Badge
         if: always()
