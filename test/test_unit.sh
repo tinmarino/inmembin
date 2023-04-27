@@ -3,19 +3,15 @@
 : 'Unit tests for inmembin.sh functions'
 
 # Include
-scriptdir=$(dirname "$(readlink -f "$0")"); . "$scriptdir/lib_test.sh"
-
-# Set PS4
-try_set_ps4
-
-# Include
-scriptdir=$(dirname "$(readlink -f "$0")")
-. "$scriptdir/lib_test.sh"
+testdir=$(dirname "$(readlink -f "$0")"); . "$testdir/lib_test.sh"
 : "${exit_status=0}"  # Silence shellcheck
 
 
 # Source inmembin.sh
-INMEMBIN_SOURCED=1 . "$scriptdir"/../inmembin.sh
+INMEMBIN_SOURCED=1 . "$testdir"/../inmembin.sh
+
+# Global helpers
+hex_0_to_256=000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
 
 main_test(){
   test_unknown_arch
@@ -32,7 +28,7 @@ main_test(){
 test_unknown_arch(){
   out=$(mktemp -t -p /tmp)
   err=$(mktemp -t -p /tmp)
-  INMEMBIN_ARCH=grepme INMEMBIN_SOURCED=1 "$scriptdir"/../inmembin.sh > "$out" 2> "$err"
+  INMEMBIN_ARCH=grepme INMEMBIN_SOURCED=1 "$testdir"/../inmembin.sh > "$out" 2> "$err"
   ret=$?
   equal 0 $(( ! ret )) "script inmembin.sh must fail if cpu in env is unknown"
   equal "" "$(cat "$out")"  "script inmembin.sh must not print to stdout even if cpu in env is unknown"
@@ -121,10 +117,16 @@ test_hex2dec(){
 
 
 test_hexify(){
+  # Ascii example
   in=ABCD len=4
   ref=41424344
   out=$(echo "$in" | hexify "$len")
-  equal "$ref" "$out" "function unhexify: should easily care upper case ascii"
+  equal "$ref" "$out" "function hexify: should easily care upper case ascii"
+
+  # All bytes
+  out=$(hexify 256 < "$testdir"/byte_0_to_255.bin)
+  ref=$hex_0_to_256
+  equal "$ref" "$out" "function hexify: should convert all bytes from 0 to 255"
 }
 
 
@@ -132,7 +134,12 @@ test_unhexify(){
   in=41424344
   ref=ABCD
   out=$(unhexify "$in")
-  equal "$ref" "$out" "function hexify: should easily care upper case ascii"
+  equal "$ref" "$out" "function unhexify: should easily care upper case ascii"
+
+  tmpfile=$(mktemp -t -p /tmp)
+  unhexify "$hex_0_to_256" > "$tmpfile"
+  cmp "$tmpfile" "$testdir"/byte_0_to_255.bin
+  equal 0 $? "function unhexify: should work with all 256 bytes"
 }
 
 

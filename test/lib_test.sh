@@ -61,5 +61,11 @@ try_set_ps4(){
   [ -z "$GITHUB_ACTION" ] && return 1
   [ -n "$PS4" ] && [ "$PS4" != "+ " ] && return 1
   set -x
-  PS4="$(printf %b "\033[34m")Running: \$(date +\"%F %T\"):$(printf %b "\033[0m") "
+  : "${cmd:=unk}"  # For shellcheck
+  if [ -n "$YASH_VERSION" ]; then
+    date=""  # Yash do not support subshell in PS4 => infinite loop of the death I guess
+  else
+    date="\$(date +\"%F %T\") : "
+  fi
+  PS4="$(printf %b "\033[34m"): Running: L\$LINENO: $date$(printf %b "\033[0m") "
 }

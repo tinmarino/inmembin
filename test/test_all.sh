@@ -16,7 +16,7 @@ colorize(){
 
 declare -a a_shell=(Shell ---) a_unit=(Unit ---) a_sync=(Sync ---) a_async=(Async ---)
 
-for shell in bash zsh ash mksh ksh93 sh; do
+for shell in bash zsh ash mksh ksh93 sh yash; do
   a_shell+=("$shell")
   test_shell_mode "$shell" --unit; a_unit+=($?)
   test_shell_mode "$shell" --sync; a_sync+=($?)

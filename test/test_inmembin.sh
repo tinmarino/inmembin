@@ -25,6 +25,13 @@ case $cmd in
   *) printf "%b\n" "\033[31mError: call me with a command in $r_known_shell (got $cmd: $(echo "$cmd"|xxd))\nTip: ash test_inmembin.sh\033[0m"; exit 1;;
 esac
 
+# Check yash
+if [ yash = "$cmd" ] &&  [ "$LC_CTYPE" != en_US.ISO-8859-15 ]; then
+  # Yash is too strict with encoding, and convert to 0 bytes above 7f
+  # Ensure latin1 for yash
+  >&2 echo "Warning: Use the latin1 encoding with yash: I want LC_CTYPE=en_US.ISO-8859-15 and got '$LC_CTYPE'"
+fi
+
 
 main_test(){
   case "$*" in *--unit*) test_unit;; esac
@@ -48,7 +55,7 @@ test_async(){
   sleep 1
 
   # Debug
-  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 ls -l /proc/$$/fd
+  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 ls -l /proc/$pid/fd
 
   get_fd_number "$pid"; fd=$?
   out=$(execute_echo_from_file "/proc/$pid/fd/$fd")
@@ -69,7 +76,7 @@ test_sync(){
   pid=$$
 
   # Debug
-  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 ls -l /proc/$$/fd
+  [ "$INMEMBIN_DEBUG" != 0 ] && >&2 ls -l /proc/$pid/fd
 
   get_fd_number "$pid"; fd=$?
   out=$(execute_echo_from_file "/proc/$pid/fd/$fd")

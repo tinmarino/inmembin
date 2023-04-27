@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shell: [bash, zsh, ash, ksh, sh]
+        shell: [bash, zsh, ash, ksh, sh, yash]
         image: [debian, archlinux, alpine]
         mode: [unit, async, sync]
         cpu: [x86]
@@ -37,6 +37,9 @@ jobs:
         timeout-minutes: 10
         run: |
           set -x; PS4="$(printf %b "\033[34m")Running: \D{%F %T}:$(printf %b "\033[0m") "
+          if [ yash = "${{ matrix.shell }}" ]; then
+            export LC_CTYPE=en_US.ISO-8859-15
+          fi
           "${{ matrix.shell }}" test/test_inmembin.sh "--${{ matrix.mode }}" "--${{ matrix.shell }}"
           ret=$?
           if [ 0 = "$ret" ]; then

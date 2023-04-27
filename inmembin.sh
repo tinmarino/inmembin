@@ -100,9 +100,7 @@ create_memfd(){
 
 
 read_mem(){
-  : 'Read mem at pos (arg1) with size (arg2)
-    -- TODO: Implementing... bash only
-  '
+  : 'Read mem at pos (arg1) with size (arg2)'
   exec 6< /proc/self/mem
   dd bs=1 skip="$1" count="$2" <&6 2> /dev/null | hexify "$2" 2> /dev/null
   exec 6<&-
@@ -111,7 +109,7 @@ read_mem(){
 
 write_mem(){
   : 'Write memory at pos (arg1) content (arg2)'
-  exec 6> /proc/self/mem
+  exec 6<> /proc/self/mem
   seek "$1" <&6
   unhexify "$2" >&6
   exec 6>&-
@@ -140,15 +138,15 @@ craft_shellcode(){
       #out_sc="${out_sc}cd03"
 
       # Pre
-      # -- Dup fd
+      # --syscall  Dup2(
       out_sc="${out_sc}4831c04889c6b0024889c7b0210f05"
       # -- mov 15, jumper addr
       out_sc="${out_sc}49bf${jumper_addr_hex_endian}"
-      # -- memprotect RW
+      # -- syscall memprotect RW
       out_sc="${out_sc}b80a00000048bf${jumper_addr_hex_endian_page}ba03000000be000001000f05"
       # -- write jumper saved
       out_sc="${out_sc}41c707${save_dw1}41c74704${save_dw2}41c74708${save_dw3}"
-      # -- memprotect RX
+      # -- syscall memprotect RX
       out_sc="${out_sc}b80a00000048bf${jumper_addr_hex_endian_page}ba05000000be000001000f05"
 
       # In
@@ -277,18 +275,35 @@ unhexify(){
 }
 
 
-
 hexify(){
   : 'Convert (arg1) bytes (stdin) to ascii hex (stdout) [WARNING: slow]'
-  byte_counter=0
+  byte_counter=0 hex_out=''
   while [ "$byte_counter" -lt "$1" ]; do
     # read one byte, using a work around for the fact that command
     # substitution strips the last character.
-    c=$(dd bs=1 count=1 2> /dev/null; echo .)
-    c=${c%.} 2> /dev/null
-    printf "%02x" "'$c"
-    : $((byte_counter+=1))
+    exec 6>&2; exec 2> /dev/null  # avoid: bash: warning: command substitution: ignored null byte in input
+    char_tmp=$(dd bs=1 count=1 2> /dev/null; printf %s .)
+    exec 2>&6
+    char_tmp=${char_tmp%.}
+    hex_tmp=$(printf "%02x" "'$char_tmp")
+    # Dirty trick for yash which convert 69 to dfe9 due to wide conv
+    if [ -n "$YASH_VERSION" ]; then
+      case $hex_tmp
+        in
+          20ac) hex_tmp=a4;;
+          160) hex_tmp=a6;;
+          161) hex_tmp=a8;;
+          17d) hex_tmp=b4;;
+          17e) hex_tmp=b8;;
+          152) hex_tmp="bc";;  # Quoting as shellcheck complains
+          153) hex_tmp=bd;;
+          178) hex_tmp=be;;
+      esac
+    fi
+    hex_out="$hex_out$hex_tmp"
+    : $((byte_counter += 1))
   done
+  printf %s "$hex_out"
 }
 
 
@@ -306,11 +321,11 @@ is_sourced(){
     case $ZSH_EVAL_CONTEXT in *:file) INMEMBIN_SOURCED=1;; esac
   elif [ -n "$BASH_VERSION" ]; then
     # shellcheck disable=SC3028,SC3054  # In POSIX sh, BASH_SOURCE, array reference also undefined
-    [ "${BASH_SOURCE[0]}" != "$0" ] && INMEMBIN_SOURCED=1
+    eval '[ "${BASH_SOURCE[0]}" != "$0" ]' && INMEMBIN_SOURCED=1
   elif [ -n "$KSH_VERSION" ]; then
     # shellcheck disable=SC2296  # Parameter expansions can't start with .
     case $KSH_VERSION in
-      *AJM*) [ "$(cd -- "$(dirname -- "$0")" && pwd -P)/$(basename -- "$0")" != "$(cd -- "$(dirname -- "${.sh.file}")" && pwd -P)/$(basename -- "${.sh.file}")" ] && INMEMBIN_SOURCED=1;;  # ksh83
+      *AJM*) eval '[ "$(cd -- "$(dirname -- "$0")" && pwd -P)/$(basename -- "$0")" != "$(cd -- "$(dirname -- "${.sh.file}")" && pwd -P)/$(basename -- "${.sh.file}")" ]' && INMEMBIN_SOURCED=1;;  # ksh83, need eval to avoid breaking the yash parser
       *) case ${0##*/} in ksh|mksh) INMEMBIN_SOURCED=1; esac;;  # mksh, including *MIRBSD*|*"PD KSH"*)
     esac
   else # All other shells: examine $0 for known shell binary filenames.

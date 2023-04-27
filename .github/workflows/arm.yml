@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shell: [bash, zsh, ash, ksh, sh]
+        shell: [bash, zsh, ash, ksh, sh, yash]
         image: [debian, archlinux, alpine]
         mode: [unit]
         cpu: [arm]
@@ -35,7 +35,7 @@ jobs:
 
       - name: Run on arch container
         id: run-on-arm
-        timeout-minutes: 20
+        timeout-minutes: 100
         uses: uraimo/run-on-arch-action@v2.5.0
         with:
           arch: aarch64
